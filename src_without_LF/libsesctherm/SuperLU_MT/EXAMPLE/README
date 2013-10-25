@@ -1,0 +1,23 @@
+This directory contains sample programs to illustrate how to use
+various functions provded in SuperLU_MT. The users can modify these templates
+to suit their applications. The command line option "nprocs" indicates the 
+number of processes to be used. If this option is not provided at the 
+command line, the programs will run on a single processor.
+
+1. To run example calling simple driver xGSSV:
+        % pdlinsol -p [nprocs] < g10
+
+2. To run example calling expert driver xGSSVX: 
+	% pdlinsolx -p [nprocs] < g10
+
+3. To run example that performs repeated factorizations for the matrix
+   with the same sparsity pattern:
+	% pdrepeat -p [nprocs] < g10
+
+4. To run example that integrates with other multithreaded application,
+   but threads are created only once:
+	% pdspmd -p [nprocs] < g10
+
+5. To use Fortran interface, do the following:
+        1) make f77exm
+    	2) f77exm -p [nprocs] < g10

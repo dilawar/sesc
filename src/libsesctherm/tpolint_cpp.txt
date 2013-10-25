@@ -1,0 +1,130 @@
+/********************************************************
+*       Polynomial Interpolation or Extrapolation       *
+*              of a Discreet Function F(x)              *
+* ----------------------------------------------------- *
+* SAMPLE RUN:                                           *
+* (Example: Function sin(x) - 2*cos(x) is given by 12   *
+*          points from x=0 to x=1.1.                    *
+*          Extrapolate for x=1.255).                    *
+*                                                       *
+*  for X             = 1.25500000e+000                  *
+*  Estimated Y value = 3.29402327e-001                  *
+*  Estimated Error   = -8.25896915e-011                 *
+*  Exact Y value     = 3.29402327e-001                  *
+*                                                       *
+* ----------------------------------------------------- *
+* REFERENCE: "Numerical Recipes, The Art of Scientific  *
+*             Computing by W.H. Press, B.P. Flannery,   *
+*             S.A. Teukolsky and W.T. Vetterling,       *
+*             Cambridge University Press, 1986".        *
+*                                                       *
+*                    C++ Release By J-P Moreau, Paris.  *
+********************************************************/
+#include <stdio.h>
+#include <math.h>
+
+#define  NMAX  25
+
+double X[NMAX], Y[NMAX];
+double XX, YY, XERR;
+int    N;
+
+
+double FCT(double X) {
+  return (sin(X) - 2.0*cos(X));
+}
+
+
+void POLINT(double *XA, double *YA, int N, double X, double *Y, double *DY) {
+/****************************************************
+*     Polynomial Interpolation or Extrapolation     *
+*            of a Discreet Function                 *
+* ------------------------------------------------- *
+* INPUTS:                                           *
+*   XA:    Table of abscissas (N)                   *
+*   YA:    Table of ordinates (N)                   *
+*    N:    Number of points                         *
+*    X:    Interpolation abscissa value             *
+* OUTPUTS:                                          *
+*    Y:    Returned estimation of function for X    *
+*   DY:    Estimated error for Y                    *
+****************************************************/
+  double C[NMAX], D[NMAX];
+  double DEN,DIF,DIFT,HO,HP,W;
+  int I,M,NS;
+
+  NS=1;
+  DIF = fabs(X-XA[1]);
+  for (I=1; I<=N; I++) {
+    DIFT = fabs(X-XA[I]);
+    if (DIFT < DIF) {
+      NS=I;               //index of closest table entry
+      DIF = DIFT;
+    }
+    C[I]=YA[I];           //Initialize the C's and D's
+    D[I]=YA[I];
+  }
+  *Y=YA[NS];              //Initial approximation of Y
+  NS--;
+  for (M=1; M<N; M++) {
+
+	for (I=1; I<=N-M; I++) {
+      HO=XA[I]-X;
+      HP=XA[I+M]-X;
+      W=C[I+1]-D[I];
+      DEN=HO-HP;
+      if (DEN == 0.0) {
+        printf("\n Error: two identical abscissas.\n\n");
+        return;
+      }
+      DEN=W/DEN;
+      D[I]=HP*DEN;         //Update the C's and D's
+      C[I]=HO*DEN;
+    }
+    if (2*NS < N-M)        //After each column in the tableau XA is completed,
+      *DY=C[NS+1];         //we decide which correction, C or D, we want to   
+    else {                 //add to our accumulating value of Y, i.e. which   
+      *DY=D[NS];           //path to take through the tableau, for (king up or
+      NS--;                //down. We do this in such a way as to take the    
+    }                      //most "straight line" route through the tableau to
+    *Y = *Y + *DY;         //its apex, updating NS accordingly to keep track  
+	                       //of where we are. This route keeps the partial    
+  }                        //approximations centered (insofar as possible) on 
+                           //the target X.The last DY added is thus the error 
+}                          //indication.
+
+
+void main()  {
+
+  N = 12;     //Number of points
+
+  //define tables X and Y
+  X[1] = 0.0; Y[1]=FCT(X[1]);
+  X[2] = 0.1; Y[2]=FCT(X[2]);
+  X[3] = 0.2; Y[3]=FCT(X[3]);
+  X[4] = 0.3; Y[4]=FCT(X[4]);
+  X[5] = 0.4; Y[5]=FCT(X[5]);
+  X[6] = 0.5; Y[6]=FCT(X[6]);
+  X[7] = 0.6; Y[7]=FCT(X[7]);
+  X[8] = 0.7; Y[8]=FCT(X[8]);
+  X[9] = 0.8; Y[9]=FCT(X[9]);
+  X[10] = 0.9; Y[10]=FCT(X[10]);
+  X[11] = 1.0; Y[11]=FCT(X[11]);
+  X[12] = 1.1; Y[12]=FCT(X[12]);
+
+  //define interpolation abscissa
+  XX = 1.255;
+
+  //call interpolation function
+  POLINT(X,Y,N,XX,&YY,&XERR);
+  
+  //print results
+  printf("\n");
+  printf(" for X             = %15.8e\n", XX);
+  printf(" Estimated Y value = %15.8e\n", YY);
+  printf(" Estimated Error   = %15.8e\n", XERR);
+  printf(" Exact Y value     = %15.8e\n", FCT(XX));
+  printf("\n");
+}
+
+// end of file tpolint.cpp

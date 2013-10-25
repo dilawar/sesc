@@ -1,0 +1,60 @@
+
+ Shared Useful Code Library  (libsuc)
+
+ This library has many useful code that can be shared between different projects.
+
+pool.h
+ Creator    : Jose Martinez - jose.martinez@acm.org
+ Description: An easy to use memory pool
+
+TQueue.h
+ Creator    : Joe Renau - renau@acm.org
+ Description: Very efficient Time Queue structure. In theory it is possible
+              to use the STL instead, but this structure is optimized for
+	      the most common case in the simulator. There is nearly always
+	      one event to do in a given time slot. This "common case" makes
+	      possible to implement a class much more efficient for the common
+	      case although the worst case is worse.
+
+Config.h
+ Creator    : Joe Renau - renau@acm.org
+ Description: Standard class for reading configuration files. See
+              tests/sample1.cfg
+
+callback.h 
+ Creator    : Joe Renau - renau@acm.org
+ Description: Powerful callback templates. All the timing use in sesc is based on
+              those templates.
+
+FastQueue.h
+ Creator    : Joe Renau - renau@acm.org
+ Description: A queue very similar to the STL queue. The only difference is that 
+              this queue has a maximum size known at construction time. Thanks to
+	      that restriction, it is slightly faster than the STL queue
+
+GStats.h
+ Creator    : Joe Renau - renau@acm.org
+ Description: Generic classes to handle the statistics in an homegenous way.
+
+nanassert.h
+ Creator    : Joe Renau - renau@acm.org
+ Description: Assertion management classes. At the beginning I try to use nana.h,
+              but it only works with the gcc compiler. That's the reason why I
+	      modified slightly the syntax, so that it works with all the compilers.
+	      I strongly recommend to use it in all your programs. It helps A LOT 
+	      to find errors, and to remember you the preconditions and postconditions.
+
+Port.h
+ Creator    : Basilio Fraguela - fraguela@cs.uiuc.edu & Joe Renau - renau@acm.org
+ Description: A set of templates to calculate port occupancy.
+
+Snippets.h
+ Creator    : Basilio Fraguela - fraguela@cs.uiuc.edu & Joe Renau - renau@acm.org
+ Descripton: Very small pieces of code useful. For example: prefetch, log2 functions.
+
+HVersion.h  
+ Creator    : Jose Renau - renau@acm.org
+ Description: For TLS/TaskScalar/similars a task spawn can happen out of order. This class
+              helps to manage versions.
+
+

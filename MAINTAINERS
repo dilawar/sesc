@@ -1,0 +1,92 @@
+The maintainers is a copy of the way that the Linux kernel maintainers works.
+
+Please follow the following steps before sending a path/update:
+
+1-Checkout the latest SESC version and synchronize your patch with it.
+
+2-Try to verify that your patch/update works.
+
+3-If a patch involves more than one maintainer send it to both of them 
+ simulatenously.
+
+4-Follow the coding guideline of the documentation.
+
+D: Description
+F: Files Maintained (Use regular expression to do a match)
+P: Person
+M: Mail patches to
+W: Web-page
+S: Status, one of the following:
+
+        Supported:      Someone is actually paid to look after this.
+        Maintained:     Someone actually looks after it.
+        Odd Fixes:      It has a maintainer but they don't have time to do
+                        much other than throw the odd patch in. See below..
+        Orphan:         No current maintainer [but maybe you could take the
+                        role as you write your new code].
+
+---------------------------------------
+D:New ISA emulation
+F:libemul/*, */*
+P:Milos Prvulovic
+M:milos@cc.gatech.edu
+W:http://www.cc.gatech.edu/~milos
+S:Supported
+---------------------------------------
+D:OS system
+F:OS/*
+P:Basilio Fraguela
+M:basilio@udc.es
+W:http://www.des.udc.es/~basilio
+S:Orphan?
+---------------------------------------
+D:Memory System
+F:backend/* network/CC*
+P:James Tuck
+M:jtuck@cs.uiuc.edu
+W:????
+S:Supported
+---------------------------------------
+D:Network
+F:libnet/*
+P:Liu Wei
+M:liuwei@cs.uiuc.edu
+W:????
+S:Supported
+---------------------------------------
+D:libapp (locks/barriers)
+F:libnapp/*
+P:Liu Wei
+M:liuwei@cs.uiuc.edu
+W:????
+S:Supported
+---------------------------------------
+D:Energy model
+F:*/*
+P:Smruti Sarangi
+M:sarangii@uiuc.edu
+W:????
+S:Supported
+---------------------------------------
+D:Everything
+F:*/*
+P:Jose Renau
+M:renau@soe.ucsc.edu
+W:http://www.soe.ucsc.edu/~renau
+S:Supported
+---------------------------------------
+D:Contributions & Patches
+F:*/*
+P:Hou Rui
+M:Hou Rui <hourui@ict.ac.cn>
+W:http://www.soe.ucsc.edu/~renau
+S:
+---------------------------------------
+D:Contributions & Patches
+F:libmint/*
+P:Daniel Grund
+M:grund@cs.uni-sb.de
+W:
+S:
+---------------------------------------
+

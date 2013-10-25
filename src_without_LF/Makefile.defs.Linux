@@ -1,0 +1,120 @@
+#################
+# Linux specific
+#
+# If MINT_TARGET is defined, it is assumed to have a gcc 3.2 or newer
+# compiler. Valid values are
+#
+# setenv MINT_TARGET pentium3
+#
+# setenv MINT_TARGET athlon-mp
+#
+# setenv MINT_TARGET itanium
+#
+# If you want to use the icc compiler (Intel). Use something like this
+#
+#export INTEL_LICENSE_FILE=/opt/intel/licenses/l_cpp_88267802.lic
+#export PATH=${PATH}:/opt/intel/intel_cc_80/bin
+#export LD_LIBRARY_PATH=/opt/intel/intel_cc_80/lib
+#export ICC=1
+
+DEFS	+=-DLINUX -DLENDIAN  -DSIMICS -DPOSIX_MEMALIGN
+AABI	:=
+ABI	:=
+ABINAME :=Linux
+##########################################################
+ifdef ICC
+##############
+# icc Compiler
+CXX	=icc
+CC	=icc
+LOPTS	:=-O2
+COPTS	:=-O3
+else
+##############
+# gcc Compiler
+PDEFS	:=-W -Wall -Wno-unused
+CXX	=g++
+CC	=gcc
+
+ifdef PERFORMANCE
+COPTS	:=-O2 -pg -fno-inline-functions
+LOPTS   :=-O2 -pg -fno-inline-functions
+else
+ifdef DEBUG
+# Profiling and coverage analysis options
+#COPTS	:= -O0 -g -pg -fprofile-arcs -ftest-coverage -fno-inline-functions $(PDEFS)
+#LOPTS	+= -O0 -g -pg -fprofile-arcs -ftest-coverage
+# Memory bug checking
+#COPTS	:= -O0 -g -fno-inline-functions -fmudflap -lmudflap $(PDEFS)
+#LOPTS	+= -O0 -g -fmudflap -lmudflap
+COPTS	:= -O0 -g -fno-inline-functions $(PDEFS)
+LOPTS	+= -O0 -g
+else
+# -fast does not work by default. Disable some opts
+COPTS	:=-O3
+LOPTS	:=-O2
+endif # DEBUG
+endif # PERFORMANCE
+
+# Shared COPTS (do not affect debugging)
+# Plaform Specific
+COPTS	+=-momit-leaf-frame-pointer
+ifdef MINT_TARGET
+COPTS	+= -march=$(MINT_TARGET)
+LOPTS	+= -march=$(MINT_TARGET)
+else
+# Default architecture is i686
+OptArch := -march=i686
+# But now try to detect the real architecture
+VendorId:=$(shell cat /proc/cpuinfo | grep vendor_id | head -1)
+VendorId:=$(word $(words $(VendorId)),$(VendorId))
+# Intel processors
+ifeq ($(VendorId),GenuineIntel)
+  # Intel's only x86-64 option is nocona
+  ifeq ($(shell uname -p),x86_64)
+    ifdef SESC_32BIT
+      OptArch += -m32 -march=i386
+    else
+      OptArch := -march=nocona
+    endif
+  endif
+endif
+ifeq ($(VendorId),AuthenticAMD)
+  # Intel's only x86-64 option is nocona
+  ifeq ($(shell uname -p),x86_64)
+    ifdef SESC_32BIT
+      OptArch += -m32 -march=i386
+    else
+      OptArch := -march=k8
+    endif
+  endif
+endif
+COPTS   += $(OptArch)
+LOPTS	+= $(OptArch)
+endif
+# Platform neutral
+COPTS +=-funroll-loops -fsched-interblock #-fomit-frame-pointer
+COPTS +=-ffast-math -fno-strict-aliasing -freg-struct-return 
+endif # icc Compiler 
+ifdef SESC_SESCTHERM
+# sesctherm options
+XSTDLIBS +=/usr/lib64/liblapack.so.3
+# sescspot options
+DEFS+=-DMATHACCEL=2 -I/mada/software/amd/acml/gfortran64/include
+XSTDLIBS +=/mada/software/amd/acml/gfortran64/lib/libacml_mv.a /mada/software/amd/acml/gfortran64/lib/libacml.a -lgfortran -lm
+endif
+##############################################################################
+
+##############################################################################
+
+ARFLAGS	:=cr
+SHELL	=/bin/sh
+AS	=as
+LD	=ld
+AR	=ar
+M4	=m4
+MAKE	=make
+RANLIB	=ranlib
+FIND	=find
+SED	=sed
+CONDORLD=condor_compile g++ -z muldefs

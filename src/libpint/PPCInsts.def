@@ -1,0 +1,252 @@
+/* 
+   SESC: Super ESCalar simulator
+   Copyright (C) 2003 University of Illinois.
+
+   Contributed by Luis Ceze
+                  Brian Greskamp
+		  Karin Strauss
+		  Paul Sack
+
+This file is part of SESC.
+
+SESC is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation;
+either version 2, or (at your option) any later version.
+
+SESC is    distributed in the  hope that  it will  be  useful, but  WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should  have received a copy of  the GNU General  Public License along with
+SESC; see the file COPYING.  If not, write to the  Free Software Foundation, 59
+Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*/
+
+// dummy instruction - cannot have same opcode as any other instruction
+PPCINST(dummy,    0,  0, D, iALU, iNop ),
+
+// I-form
+PPCINST (b,      18, 0, I, iBJ,  BJUncond ),
+   
+// B-form
+PPCINST (bc,     16, 0, B, iBJ,  BJCond ),
+  
+// SC-form
+PPCINST (sc,     17, 0, SC, iOpInvalid, iSubInvalid ), //System call
+    
+// D-form
+PPCINST (addi,   14, 0, D, iALU, iSubInvalid ),
+PPCINST (addic,  12, 0, D, iALU, iSubInvalid ),
+PPCINST (addic_, 13, 0, D, iALU, iSubInvalid ),
+PPCINST (addis,  15, 0, D, iALU, iSubInvalid ),
+PPCINST (andi_,  28, 0, D, iALU, iSubInvalid ),
+PPCINST (andis_, 29, 0, D, iALU, iSubInvalid ),
+PPCINST (cmpi,   11, 0, D, iALU, iSubInvalid ),
+PPCINST (cmpli,  10, 0, D, iALU, iSubInvalid ),
+PPCINST (lbz,    34, 0, D, iLoad, iMemory ),
+PPCINST (lbzu, 	 35, 0, D, iLoad, iMemory ),
+PPCINST (lfd, 	 50, 0, D, iLoad, iMemory ),
+PPCINST (lfdu, 	 51, 0, D, iLoad, iMemory ),
+PPCINST (lfs, 	 48, 0, D, iLoad, iMemory ),
+PPCINST (lfsu, 	 49, 0, D, iLoad, iMemory ),
+PPCINST (lha, 	 42, 0, D, iLoad, iMemory ),
+PPCINST (lhau, 	 43, 0, D, iLoad, iMemory ),
+PPCINST (lhz, 	 40, 0, D, iLoad, iMemory ),
+PPCINST (lhzu, 	 41, 0, D, iLoad, iMemory ),
+PPCINST (lmw, 	 46, 0, D, iLoad, iMemory ),
+PPCINST (lwz, 	 32, 0, D, iLoad, iMemory ),
+PPCINST (lwzu, 	 33, 0, D, iLoad, iMemory ),
+PPCINST (mulli,   7, 0, D, iMult, iSubInvalid ),
+PPCINST (ori, 	 24, 0, D, iALU, iSubInvalid ),
+PPCINST (oris, 	 25, 0, D, iALU, iSubInvalid ),
+PPCINST (stb, 	 38, 0, D, iStore, iMemory ),
+PPCINST (stbu, 	 39, 0, D, iStore, iMemory ),
+PPCINST (stfd, 	 54, 0, D, iStore, iMemory ),
+PPCINST (stfdu,  55, 0, D, iStore, iMemory ),
+PPCINST (stfs, 	 52, 0, D, iStore, iMemory ),
+PPCINST (stfsu,  53, 0, D, iStore, iMemory ),
+PPCINST (sth, 	 44, 0, D, iStore, iMemory ),
+PPCINST (sthu, 	 45, 0, D, iStore, iMemory ),
+PPCINST (stmw, 	 47, 0, D, iStore, iMemory ),
+PPCINST (stw,    36, 0, D, iStore, iMemory ),
+PPCINST (stwu,   37, 0, D, iStore, iMemory ),
+PPCINST (subfic,  8, 0, D, iALU, iSubInvalid ),
+PPCINST (twi,     3, 0, D, iOpInvalid, iSubInvalid ),
+PPCINST (xori,   26, 0, D, iALU, iSubInvalid ),
+PPCINST (xoris,  27, 0, D, iALU, iSubInvalid ),
+
+// DS-form
+PPCINST (ld,   58, 0, DS, iLoad, iMemory ),
+PPCINST (ldu,  58, 1, DS, iLoad, iMemory ),
+PPCINST (lwa,  58, 2, DS, iLoad, iMemory ),
+PPCINST (std,  62, 0, DS, iStore, iMemory ),
+PPCINST (stdu, 62, 1, DS, iStore, iMemory ),
+
+// X-form
+PPCINST (and,	  31, 28,   X, iALU, iSubInvalid ),
+PPCINST (andc, 	  31, 60,   X, iALU, iSubInvalid ),
+PPCINST (cmp, 	  31, 0,    X, iALU, iSubInvalid ),
+PPCINST (cmpl, 	  31, 32,   X, iALU, iSubInvalid ),
+PPCINST (cntlzw,  31, 26,   X, iALU, iSubInvalid ),
+PPCINST (dcba,	  31, 758,  X, iOpInvalid, iSubInvalid ),
+PPCINST (dcbf,    31, 86,   X, iOpInvalid, iSubInvalid ),
+PPCINST (dcbi,    31, 470,  X, iOpInvalid, iSubInvalid ),
+PPCINST (dcbst,   31, 54,   X, iOpInvalid, iSubInvalid ),
+PPCINST (dcbt,    31, 278,  X, iOpInvalid, iSubInvalid ),
+PPCINST (dcbtst,  31, 246,  X, iOpInvalid, iSubInvalid ),
+PPCINST (dcbz,    31, 1014, X, iOpInvalid, iSubInvalid ),
+PPCINST (eciwx,   31, 310,  X, iOpInvalid, iSubInvalid ),
+PPCINST (ecowx,   31, 438,  X, iOpInvalid, iSubInvalid ),
+PPCINST (eieio,   31, 854,  X, iFence, iMemFence ),
+PPCINST (eqv,     31, 284,  X, iALU, iSubInvalid ),
+PPCINST (extsb,   31, 954,  X, iALU, iSubInvalid ),
+PPCINST (extsh,   31, 922,  X, iALU, iSubInvalid ),
+PPCINST (fabs,    63, 264,  X, fpALU, iSubInvalid ), 
+PPCINST (fcmpo,   63, 32,   X, fpALU, iSubInvalid ),
+PPCINST (fcmpu,   63, 0,    X, fpALU, iSubInvalid ),
+PPCINST (fctiw,   63, 14,   X, fpALU, iSubInvalid ),
+PPCINST (fctiwz,  63, 15,   X, fpALU, iSubInvalid ),
+PPCINST (fmr,     63, 72,   X, fpALU, iSubInvalid ),
+PPCINST (fnabs,   63, 136,  X, fpALU, iSubInvalid ),
+PPCINST (fneg,    63, 40,   X, fpALU, iSubInvalid ),
+PPCINST (frsp,    63, 12,   X, fpALU, iSubInvalid ),
+PPCINST (icbi,    31, 982,  X, iOpInvalid, iSubInvalid ),
+PPCINST (lbzux,   31, 119,  X, iLoad, iMemory ),
+PPCINST (lbzx,    31, 87,   X, iLoad, iMemory ),
+PPCINST (lfdux,   31, 631,  X, iLoad, iMemory ),
+PPCINST (lfdx,    31, 599,  X, iLoad, iMemory ),
+PPCINST (lfsux,   31, 567,  X, iLoad, iMemory ),
+PPCINST (lfsx,    31, 535,  X, iLoad, iMemory ),
+PPCINST (lhaux,   31, 375,  X, iLoad, iMemory ),
+PPCINST (lhax,    31, 343,  X, iLoad, iMemory ),
+PPCINST (lhbrx,   31, 790,  X, iLoad, iMemory ),
+PPCINST (lhzux,   31, 311,  X, iLoad, iMemory ),
+PPCINST (lhzx,    31, 279,  X, iLoad, iMemory ),
+PPCINST (lswi,    31, 597,  X, iLoad, iMemory ),
+PPCINST (lswx,    31, 533,  X, iLoad, iMemory ),
+PPCINST (lwarx,   31, 20,   X, iLoad, iMemory ),
+PPCINST (lwbrx,   31, 534,  X, iLoad, iMemory ),
+PPCINST (lwzux,   31, 55,   X, iLoad, iMemory ),
+PPCINST (lwzx,    31, 23,   X, iLoad, iMemory ),
+PPCINST (mcrfs,   63, 64,   X, fpALU, iSubInvalid ),
+PPCINST (mcrxr,   31, 512,  X, iALU, iSubInvalid ),
+PPCINST (mfcr,    31, 19,   X, iALU, iSubInvalid ),
+PPCINST (mffs,    63, 583,  X, fpALU, iSubInvalid ),
+PPCINST (mfmsr,    2, 83,   X, iOpInvalid, iSubInvalid ),
+PPCINST (mfsr,     2, 595,  X, iOpInvalid, iSubInvalid ),
+PPCINST (mfsrin,   2, 659,  X, iOpInvalid, iSubInvalid ),
+PPCINST (mtfsb0,  63, 70,   X, fpALU, iSubInvalid ),
+PPCINST (mtfsb1,  63, 38,   X, fpALU, iSubInvalid ),
+PPCINST (mtfsfi,  63, 134,  X, fpALU, iSubInvalid ),
+PPCINST (mtmsr,    2, 146,  X, iOpInvalid, iSubInvalid ),
+PPCINST (mtsr,     2, 210,  X, iOpInvalid, iSubInvalid ),
+PPCINST (mtsrin,   2, 242,  X, iOpInvalid, iSubInvalid ),
+PPCINST (nand,    31, 476,  X, iALU, iSubInvalid ),
+PPCINST (nor,     31, 124,  X, iALU, iSubInvalid ),
+PPCINST (or,      31, 444,  X, iALU, iSubInvalid ),
+PPCINST (orc,     31, 412,  X, iALU, iSubInvalid ),
+PPCINST (slw,     31, 24,   X, iALU, iSubInvalid ),
+PPCINST (sraw,    31, 792,  X, iALU, iSubInvalid ),
+PPCINST (srawi,   31, 824,  X, iALU, iSubInvalid ),
+PPCINST (srw,     31, 536,  X, iALU, iSubInvalid ),
+PPCINST (stbux,   31, 247,  X, iStore, iMemory ),
+PPCINST (stbx,    31, 215,  X, iStore, iMemory ),
+PPCINST (stfdux,  31, 759,  X, iStore, iMemory ),
+PPCINST (stfdx,   31, 727,  X, iStore, iMemory ),
+PPCINST (stfiwx,  31, 983,  X, iStore, iMemory ),
+PPCINST (stfsux,  31, 695,  X, iStore, iMemory ),
+PPCINST (stfsx,   31, 663,  X, iStore, iMemory ),
+PPCINST (sthbrx,  31, 918,  X, iStore, iMemory ),
+PPCINST (sthux,   31, 439,  X, iStore, iMemory ),
+PPCINST (sthx,    31, 407,  X, iStore, iMemory ),
+PPCINST (stswi,   31, 725,  X, iStore, iMemory ),
+PPCINST (stswx,   31, 661,  X, iStore, iMemory ),
+PPCINST (stwbrx,  31, 662,  X, iStore, iMemory ),
+PPCINST (stwcx_,  31, 150,  X, iStore, iMemory ),
+PPCINST (stwux,   31, 183,  X, iStore, iMemory ),
+PPCINST (stwx,    31, 151,  X, iStore, iMemory ),
+PPCINST (sync,    31, 598,  X, iFence, iMemFence ),
+PPCINST (tlbia,   31, 370,  X, iOpInvalid, iSubInvalid ),
+PPCINST (tlbie,   31, 306,  X, iOpInvalid, iSubInvalid ),
+PPCINST (tlbsync, 31, 566,  X, iOpInvalid, iSubInvalid ),
+PPCINST (tw,      31, 4,    X, iOpInvalid, iSubInvalid ),
+PPCINST (xor,     31, 316,  X, iALU, iSubInvalid ),
+
+// XL-form
+PPCINST (bcctr,  19, 528, XL, iBJ, BJCond ),
+PPCINST (bclr,   19,  16, XL, iBJ, BJRet ),
+PPCINST (crand,  19, 257, XL, iALU, iSubInvalid ),
+PPCINST (crandc, 19, 129, XL, iALU, iSubInvalid ),
+PPCINST (creqv,  19, 289, XL, iALU, iSubInvalid ),
+PPCINST (crnand, 19, 225, XL, iALU, iSubInvalid ),
+PPCINST (crnor,  19,  33, XL, iALU, iSubInvalid ),
+PPCINST (cror,   19, 449, XL, iALU, iSubInvalid ),
+PPCINST (crorc,  19, 417, XL, iALU, iSubInvalid ),
+PPCINST (crxor,  19, 193, XL, iALU, iSubInvalid ),
+PPCINST (isync,  19, 150, XL, iFence, iNop ), 
+PPCINST (mcrf,   19,   0, XL, iALU, iSubInvalid ),
+PPCINST (rfi,    19,  50, XL, iOpInvalid, iSubInvalid ),
+PPCINST (rfid,   19,  18, XL, iOpInvalid, iSubInvalid ),
+
+// XFX-form
+PPCINST (mfspr, 31, 339, XFX, iOpInvalid, iSubInvalid ),
+PPCINST (mftb,  31, 371, XFX, iALU, iSubInvalid ),
+PPCINST (mtcrf, 31, 144, XFX, iALU, iSubInvalid ),
+PPCINST (mtspr, 31, 467, XFX, iOpInvalid, iSubInvalid ),
+
+// XFL-form
+PPCINST (mtfsf, 63, 711, XFL, fpALU, iSubInvalid ),
+
+// XS-form
+PPCINST (sradi, 31, 413, XS, iALU, iSubInvalid ),
+
+// XO-form
+PPCINST (add,    31, 266, XO, iALU, iSubInvalid ),
+PPCINST (addc,   31,  10, XO, iALU, iSubInvalid ),
+PPCINST (adde,   31, 138, XO, iALU, iSubInvalid ),
+PPCINST (addme,  31, 234, XO, iALU, iSubInvalid ),
+PPCINST (addze,  31, 202, XO, iALU, iSubInvalid ),
+PPCINST (divd,   31, 489, XO, iDiv, iSubInvalid ),
+PPCINST (divdu,  31, 457, XO, iDiv, iSubInvalid ),
+PPCINST (divw,   31, 491, XO, iDiv, iSubInvalid ),
+PPCINST (divwu,  31, 459, XO, iDiv, iSubInvalid ),
+PPCINST (mulhd,  31,  73, XO, iMult, iSubInvalid ),
+PPCINST (mulhdu, 31,   9, XO, iMult, iSubInvalid ),
+PPCINST (mulhw,  31,  75, XO, iMult, iSubInvalid ),
+PPCINST (mulhwu, 31,  11, XO, iMult, iSubInvalid ),
+PPCINST (mulld,  31, 233, XO, iMult, iSubInvalid ),
+PPCINST (mullw,  31, 235, XO, iMult, iSubInvalid ),
+PPCINST (neg,    31, 104, XO, iALU, iSubInvalid ),
+PPCINST (subf,   31,  40, XO, iALU, iSubInvalid ),
+PPCINST (subfc,  31,   8, XO, iALU, iSubInvalid ),
+PPCINST (subfe,  31, 136, XO, iALU, iSubInvalid ),
+PPCINST (subfme, 31, 232, XO, iALU, iSubInvalid ),
+PPCINST (subfze, 31, 200, XO, iALU, iSubInvalid ),
+
+// A-form
+PPCINST (fadd,    63, 21, A, fpALU, iSubInvalid ),
+PPCINST (fadds,   59, 21, A, fpALU, iSubInvalid ),
+PPCINST (fdiv,    63, 18, A, fpDiv, iSubInvalid ),
+PPCINST (fdivs,   59, 18, A, fpDiv, iSubInvalid ),
+PPCINST (fmadd,   63, 29, A, fpMult, iSubInvalid ),
+PPCINST (fmadds,  59, 29, A, fpMult, iSubInvalid ),
+PPCINST (fmsub,   63, 28, A, fpMult, iSubInvalid ),
+PPCINST (fmsubs,  59, 28, A, fpMult, iSubInvalid ),
+PPCINST (fmul,    63, 25, A, fpMult, iSubInvalid ),
+PPCINST (fmuls,   59, 25, A, fpMult, iSubInvalid ),
+PPCINST (fnmadd,  63, 31, A, fpMult, iSubInvalid ),
+PPCINST (fnmadds, 59, 31, A, fpMult, iSubInvalid ),
+PPCINST (fnmsub,  63, 30, A, fpMult, iSubInvalid ),
+PPCINST (fnmsubs, 59, 30, A, fpMult, iSubInvalid ),
+PPCINST (fres,    59, 24, A, fpDiv, iSubInvalid ), // This could be wrong
+PPCINST (frsqrte,  1, 26, A, fpDiv, iSubInvalid ), // And this (but possibly never used)
+PPCINST (fsel,    63, 23, A, fpALU, iSubInvalid ),
+PPCINST (fsqrt,   63, 22, A, fpDiv, iSubInvalid ),
+PPCINST (fsqrts,  59, 22, A, fpDiv, iSubInvalid ),
+PPCINST (fsub,    63, 20, A, fpALU, iSubInvalid ),
+PPCINST (fsubs,   59, 20, A, fpALU, iSubInvalid ),
+
+// M-form
+PPCINST (rlwimi, 20, 0, M, iALU, iSubInvalid ),
+PPCINST (rlwinm, 21, 0, M, iALU, iSubInvalid ),
+PPCINST (rlwnmx,  23, 0, M, iALU, iSubInvalid )

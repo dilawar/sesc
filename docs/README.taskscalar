@@ -1,0 +1,11 @@
+
+Environment variables to tune TaskScalar:
+
+TASKSCALAR : Activate the whole taskscalar code
+
+SESC_VMEM  : Memory subsystem for Taskscalar
+
+SESC_ENERGY: Activate energy model
+
+SESC_MISPATH: Send the wrong path instructions (energy reasons)
+

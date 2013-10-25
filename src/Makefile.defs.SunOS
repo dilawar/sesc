@@ -1,0 +1,82 @@
+#################
+# SUNOS specific
+#
+# Path to add on Solaris 10/x86
+# /opt/csw/bin/:/opt/SUNWspro/bin/:/opt/csw/gcc4/bin/:/usr/ccs/bin
+
+# SUNCC=1
+
+MACHINE:=
+
+ifeq ($(shell uname -p),i386)
+ABINAME :=SunOSi386
+DEFS    +=-DLENDIAN
+else
+ABINAME :=SunOSSparc
+DEFS    +=-DSPARC
+endif
+DEFS    +=-DSUNOS
+AABI    :=
+ABI     :=
+##########################################################
+ifdef SUNCC
+PDEFS   :=
+CXX     =CC
+CC      =cc
+ifdef DEBUG
+COPTS   :=-fast -g0 -xtarget=native -xipo=2 -library=stlport4 $(PDEFS)
+LOPTS   :=-fast -g0 -xtarget=native -xipo=2 -library=stlport4
+else
+#COPTS   :=-fast -g0 -xtarget=native -xipo=2 -library=stlport4 $(PDEFS)
+#LOPTS   :=-fast -g0 -xtarget=native -xipo=2 -library=stlport4
+COPTS   :=-fast -g0 -xbinopt=prepare -xtarget=native -xipo=2 -library=stlport4 $(PDEFS)
+LOPTS   :=-fast -g0 -xbinopt=prepare -xtarget=native -xipo=2 -library=stlport4
+endif
+else
+##############
+# gcc
+PDEFS   :=-Wall -W -Wno-unused 
+CXX     =g++
+CC      =gcc
+
+ifdef DEBUG
+COPTS   :=-O0 -g -fno-inline-functions $(PDEFS)
+LOPTS   :=-O0 
+else
+# -fast does not work by default. Dissable some opts
+COPTS   :=-O3 -g1 -finline-functions -finline-limit=1800
+COPTS +=-funroll-loops -fsched-interblock -fomit-frame-pointer
+LOPTS   :=-O3 
+endif
+endif
+
+# Machine specific. none by default
+ifdef MINT_TARGET
+COPTS   += -mcpu=$(MINT_TARGET)
+LOPTS   += -mcpu=$(MINT_TARGET)
+else
+COPTS   += 
+LOPTS   += 
+endif
+# Platform neutral
+ifdef SUNCC
+COPTS +=-DUSE_STL_PORT -DSUNSTUDIO
+else
+COPTS +=-fno-strict-aliasing -freg-struct-return 
+endif
+XSTDLIBS=-lsocket
+##############################################################################
+
+##############################################################################
+
+ARFLAGS :=cr
+SHELL   =/usr/bin/bash
+AS      =as
+LD      =ld
+AR      =ar
+M4      =gm4
+MAKE    =gmake
+RANLIB  =ranlib
+FIND    =find
+SED     =sed
+

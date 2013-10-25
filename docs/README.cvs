@@ -1,0 +1,12 @@
+
+ When a project is created and it works fine, I strongly recommend
+ to create a tag. Typical examples are when the paper submission is
+ done. In that case you would like to tag all the files with the
+ conference number, year, and some extra id. For example:
+
+ $cvs tag micro-02-cherry-submission
+
+ To see all the available tags use the status command.
+
+ $cvs status
+

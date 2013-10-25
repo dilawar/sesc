@@ -1,0 +1,42 @@
+
+
+ Create Enforcer and EnforcerNet (VBus timing) (if still fails)
+
+ Can unified FMVCache and LMVCache in a single MVCache (no ifs). This
+ only would be possible if the combine algorithm is moved out of
+ LMVCache (Enforcer class a la VCR?)
+
+------------------
+
+
+ List of "small" pieces of work that I think that we should do before
+ the results from ISCA are back (February 10).
+
+------------------
+Bug-A) Correctess in miss path:
+
+ -Check the correctness of the miss path. For the CPUs configurations
+ used in the paper there were no FakePendingWindow in ANY
+ benchmark. This is extremly weird. Check the interaction of LIBVMEM
+ and misspath instructions may be deleted without being added to miss
+ path.
+
+------------------
+Bug-D) thReadEnergy
+
+ This is still a CStatsCntr. It should be a EnergyCntr (create a TCxxxEnergy)
+ group).
+
+
+--------------------------------------
+FUNCTIONALITY:
+------------------
+
+------------------
+Func-A) Energy in VBus (Smruti)
+
+ No energy model for VBus. Add a counter for Energy everytime that the port is
+ accessed.
+
+
+

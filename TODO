@@ -1,0 +1,82 @@
+8) reorganize for multiple-isa support
+
+  move MIPSInstruction.cpp to libmint
+
+  create libos for all the system calls that mint simulates
+   
+_______________________________________________________________________
+
+# REMOVE OLD/useless code
+#!/bin/bash
+
+for file in *
+do
+	echo "cleaning $file"
+	unifdef -USESCAPI_NATIVE_IRIX -USESC_LOCKPROFILE -UWINDOW_USE_HIST -USESC_SEED -USESC_SEED_OVERFLOW -USESC_CHERRY -UXACTION -USESC_INORDER_ENERGY -USESC_INORDER_SWITCH -UTS_PARANOID -UTS_RISKLOADPROF -USESC_PASS_ENVIRONMENT -UOLDMARKS -USESC_SEED_STALL_LOADS -ULOCAL_WRITE -UWRITE_REVISE -UOOO_PAPER_STATS -UVERBOSE -UVERBOSE2 -UAIX -UFOLLOW_MISPRO_ADVICE -UMIPS2_FNATIVE -UMSHR_BWSTATS -UTRANS_STALL -UVMEM_CVBASE_IN_ADDR -UVMEM_PRED_FORWARD $file >temp
+	mv temp $file
+done
+
+
+_______________________________________________________________________
+
+
+swifthWidth on power (renamed)
+________________________________________________________________________
+
+7) Subdurectory in lib directory
+ 
+ creation of .depends: SIGNATURE is something like lib*.* and path to
+ files should be something like lib*/*. e.g. libpower/cacti
+
+________________________________________________________________________
+
+All the includes should be placed in alphabetical order.
+
+_______________________________________________________________________
+
+5) Platform selection
+
+ Remove the Makefile.defs.ARCH
+
+ Use configure options to select the following parameters:
+
+
+# LINUX
+# LENDIAN (little endian)
+
+# Linux
+DEFS	+=-DLINUX -DLENDIAN -DPOSIX_MEMALIGN
+
+# Darwin
+DEFS	+=-DDARWIN
+
+
+CXX	=g++
+CC	=gcc
+
+LOPTS
+COPTS
+
+
+ARFLAGS	:=cr
+SHELL	=/bin/sh
+AS	=as
+LD	=ld
+AR	=ar
+M4	=m4
+MAKE	=make
+RANLIB	=ranlib
+FIND	=find
+
+_______________________________________________________________________
+
+Fussion Instruction.h and icode.h, it should represent a sesc
+internal instruction independent of the encoding (MIPS, PPC).
+libmint and libtrace can have their internal representation.
+
+Lazy Instruction translation?
+
+If we have a cache, it will not be necessary to translate everything
+at the beginning. This is useful if we want to have something like
+pearPC. Otherwise, it will be impossible to have binary load.
+

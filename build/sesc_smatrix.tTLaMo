@@ -1,0 +1,229 @@
+#BEGIN Configuration used. Extracted from "/home/hemant/sesc_copy/build/sesc.conf":
+procsPerNode=1
+pageSize  =4096
+technology='techParam'
+cpucore   ='issueY'
+cpucore[1:1]='issueX'
+NoMigration=false
+[FXClusterIssueX]
+iBJLat    =1
+schedNumPorts=4
+iALUUnit  ='ALUIssueX'
+iLoadLat  =1
+iALULat   =1
+recycleAt ='Execute'
+iMultUnit ='ALUIssueX'
+wakeUpNumPorts=4
+winSize   =68
+iDivLat   =12
+wakeUpPortOccp=1
+iBJUnit   ='ALUIssueX'
+iDivUnit  ='ALUIssueX'
+iLoadUnit ='LDIssueX'
+iStoreLat =1
+schedPortOccp=1
+iMultLat  =4
+iStoreUnit='STIssueX'
+schedDelay=1
+wakeupDelay=3
+[FPClusterIssueX]
+fpDivUnit ='FP0IssueX'
+wakeupDelay=3
+wakeUpPortOccp=1
+wakeUpNumPorts=4
+schedDelay=1
+fpALULat  =2
+schedNumPorts=4
+fpMultLat =4
+fpDivLat  =10
+schedPortOccp=1
+fpALUUnit ='FP0IssueX'
+fpMultUnit='FP0IssueX'
+recycleAt ='Execute'
+winSize   =32
+[DataL1]
+missDelay =1
+lowerLevel="CommonBus Bus shared"
+writePolicy='WB'
+skew      =false
+hitDelay  =2
+replPolicy='RANDOM'
+MSHR      ='DL1MSHR'
+assoc     =4
+bsize     =64
+size      =16384
+deviceType='cache'
+portOccp  =1
+numPorts  =1
+[AdvMem]
+numPorts  =1
+deviceType='bus'
+portOccp  =32
+delay     =1
+lowerLevel='BigMem'
+[BigMem]
+portOccp  =1
+bsize     =64
+lowerLevel='voidDevice'
+deviceType='niceCache'
+numPorts  =1
+size      =1024
+missDelay =1600000
+replPolicy='LRU'
+assoc     =1
+hitDelay  =490
+MSHR      ='BigMemMSHR'
+[issueY]
+minTLBMissDelay=16
+maxBranches=22
+intRegs   =90
+itlb      ='FXITLB'
+interClusterLat=2
+renameDelay=3
+instrSource="InstL1 IL1"
+stForwardDelay=1
+bpred     ='BPredIssueX'
+fpRegs    =68
+maxLoads  =48
+regFileDelay=3
+decodeDelay=3
+dtlb      ='FXDTLB'
+robSize   =126
+maxIRequests=3
+retireWidth=3
+smtDecodes4Clk=1
+dataSource="DataL1 DL1"
+bb4Cycle  =1
+instQueueSize=12
+inorder   =false
+OSType    ='std'
+cluster   ='FXClusterIssueX'
+cluster[1:1]='FPClusterIssueX'
+enableICache=true
+maxStores =42
+fetchWidth=6
+smtContexts=2
+issueWidth=3
+smtIssues4Clk=1
+smtFetchs4Clk=1
+[FXITLB]
+bsize     =8
+size      =256
+deviceType='tlb'
+replPolicy='LRU'
+assoc     =32
+[issueX]
+issueWidth=3
+fetchWidth=6
+retireWidth=3
+decodeDelay=3
+inorder   =false
+robSize   =126
+maxLoads  =48
+maxStores =42
+cluster   ='FXClusterIssueX'
+cluster[1:1]='FPClusterIssueX'
+intRegs   =90
+dtlb      ='FXDTLB'
+minTLBMissDelay=16
+dataSource="DataL1 DL1"
+stForwardDelay=1
+maxIRequests=3
+fpRegs    =68
+itlb      ='FXITLB'
+enableICache=true
+bb4Cycle  =1
+instrSource="InstL1 IL1"
+OSType    ='std'
+bpred     ='BPredIssueX'
+instQueueSize=12
+renameDelay=3
+interClusterLat=2
+maxBranches=22
+[L2Cache]
+replPolicy='LRU'
+lowerLevel="AdvMem MemBus shared"
+missDelay =4
+assoc     =8
+portOccp  =1
+numPorts  =1
+hitDelay  =10
+bsize     =64
+deviceType='cache'
+writePolicy='WB'
+size      =1048576
+MSHR      ='MSHRL2'
+[MSHRL2]
+size      =32
+type      ='full'
+bsize     =64
+[BPredIssueX]
+MetaBits  =2
+btbSize   =2048
+btbReplPolicy='LRU'
+btbAssoc  =2
+bpred4Cycle=1
+l2size    =16384
+historySize=11
+localBits =2
+type      ='hybrid'
+rasSize   =0
+BTACDelay =0
+localSize =16384
+btbBsize  =1
+Metasize  =16384
+l2Bits    =1
+[FXDTLB]
+replPolicy='LRU'
+assoc     =64
+size      =512
+deviceType='tlb'
+bsize     =8
+[InstL1]
+missDelay =0
+numPorts  =2
+replPolicy='LRU'
+hitDelay  =2
+bsize     =64
+MSHR      ='InstL1MSHR'
+deviceType='icache'
+portOccp  =1
+lowerLevel="L2Cache L2 shared"
+size      =16384
+writePolicy='WB'
+assoc     =2
+[ALUIssueX]
+Num       =2
+Occ       =1
+[DL1MSHR]
+bsize     =64
+size      =32
+type      ='full'
+[FP0IssueX]
+Occ       =1
+Num       =2
+[LDIssueX]
+Num       =0
+Occ       =1
+[BigMemMSHR]
+type      ='none'
+size      =32
+bsize     =64
+[InstL1MSHR]
+type      ='full'
+bsize     =64
+size      =4
+[STIssueX]
+Occ       =1
+Num       =0
+[CommonBus]
+deviceType='bus'
+lowerLevel="L2Cache L2 shared"
+delay     =3
+portOccp  =1
+numPorts  =2
+[techParam]
+frequency =5.000000e+09
+[voidDevice]
+deviceType='void'
+#END Configuration used. Extracted from "/home/hemant/sesc_copy/build/sesc.conf":

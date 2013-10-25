@@ -1,0 +1,39 @@
+#################
+# SGI specific
+DEFS	+=-DIRIX64
+MMAP	:=1
+ifdef NABI
+ABINAME :=IRIX64n32
+AABI    :=-n32
+ABI     :=-n32
+else
+ABINAME :=IRIX64o32
+#ABI     :=-mips2 -o32 
+#AABI    :=-mips2 -o32 
+endif
+
+ifdef DEBUG
+COPTS   :=-g
+LOPTS   :=-g
+else
+COPTS   :=-O2 
+ifdef PERFORMANCE
+COPTS	+=-noinline -INLINE:=OFF
+endif # PERFORMANCE
+LOPTS	:=
+endif # DEBUG
+PDEFS	:=-LANG:std
+ARFLAGS	:=cr
+
+##############################################################################
+SHELL	=/bin/sh
+CXX	=CC
+CC	=cc
+AS	=as
+LD	=ld
+AR	=ar
+M4	=m4
+MAKE	=gnumake-irix
+RANLIB	=ranlib
+FIND	=gfind
+SED	=sed

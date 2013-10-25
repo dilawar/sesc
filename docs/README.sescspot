@@ -1,0 +1,46 @@
+SESCSpot
+---------------
+
+SESCSpot is used in conjunction with a thermal data file from SESC.  This will produce a steady state temperature file as well as a transient state temperature file.  
+
+SESCSpot Usage
+---------------
+
+Compile SESC with thermal and power(--enable-power --enable-therm)
+
+NOTE: If power is not enabled, this will not work
+
+SESC will output a file in the form of sesc_<app>.therm.XXXXX while it is
+running a simulation.  After the simulation is complete, SESCSpot can be used to
+obtain temperature information.
+
+Note: All of these steps will produce quite large output files(for 1billion
+cycles, the final output file is 300mb)
+
+SESCSpot source is located in sesc/sescspot.  This needs to be made on its
+own(gmake).  This will produce the "sescspot" binary.
+
+SESCSpot 1.0 Usage Summary:
+Arguments:
+        -h <--hotfile>   HotSpot Temp Trace  - file that can be used by HotSpot3
+        -i <--infile>    Input file          - The therm file for which you want temperature data
+        -o <--outfile>   Output file         - Output file name for either steady state or transient temperature
+        -c <--conffile>  Configuration file) - This is the mappings from floorplan variables to sesc variables
+        -f <--floorplan> Floorplan file      - Set to the floorplan you wish to use.  Default is 'ev6.flp'
+
+SESCSpot has two modes of operation. Compute the temperature (using HotSpot 2.0), or
+generate a dump file (-h) that can be used as an input for HotSpot 3.0.
+
+#############################################
+# Example of use with HotSpot 3.0 
+
+# Generate crafty.ptrace for HotSpot 3
+./sescspot -i sesc_smatrix.therm.OcykpK -c scooreX.conf -f scooreX.flp -h crafty.ptrace 
+
+# Generate crafty.steady and crafty.ttrace
+./hotspot -c scooreX.hs3.conf -f scooreX.flp -p crafty.ptrace -o crafty.ttrace -steady_file crafty.steady 
+
+#############################################
+# Running SESCSpot by itself
+
+./sescspot -i sesc_smatrix.therm.OcykpK -c scooreX.conf -f scooreX.flp -o crafty.ttrace

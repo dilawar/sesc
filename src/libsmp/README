@@ -1,0 +1,59 @@
+/* 
+   Sesc: Super ESCalar simulator
+   Copyright (C) 2003 University of Illinois.
+
+   Contributed by Karin Strauss
+
+This file is part of SESC.
+
+SESC is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation;
+either version 2, or (at your option) any later version.
+
+SESC is    distributed in the  hope that  it will  be  useful, but  WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should  have received a copy of  the GNU General  Public License along with
+SESC; see the file COPYING.  If not, write to the  Free Software Foundation, 59
+Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*/ 
+
+This directory implements the memory backend of an SMP
+system. This implementation allows two modes of operation:
+
+A) Write-through L1 cache (Cache.cpp) and private inclusive coherent
+L2 cache (SMPCache.cpp). This is called SMP mode. In this mode:
+
+1) SMPCache should be used as a private inclusive L2 cache, which is
+the point of coherence.
+
+2) Cache has to be used as a write-through private L1 cache.
+
+B) Write-back coherent L1 cache (SMPCache.cpp) and shared
+non-inclusive L2 cache (Cache.cpp). This is called CMP mode. In this
+mode:
+
+1) SMPCache should be used as a private L1 cache, which is the point
+of coherence. Write-back is the only option.
+
+2) Any caches below the L1 level (i.e., closer to memory) should be
+non-inclusive (please notice that this is different from exclusive)
+and shared among all the L1 caches. Only one level has been tested
+(L2). To obtain a non-inclusive cache, add "inclusive = false" to the
+section representing the L2 cache. Don't forget to set the lowerLevel
+parameter of the L1 cache level as "shared".
+
+For both configurations:
+
+- The MSHR has to be non-aliasing, guaranteed (this means you shouldn't
+use the full mshr, which allows aliasing; single mshr is recommended).
+
+- Data movement is not modeled (only control messages), although it
+is not too complicated to add the data messages (any candidates?).
+
+If you are using sesc to generate data for a publication, please
+include a reference to sesc in your publication.
+
+Thanks to Paul Sack, Hou Rui and Matteo Monchiero for contributions to
+libsmp.

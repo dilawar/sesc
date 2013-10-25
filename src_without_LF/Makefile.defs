@@ -1,0 +1,387 @@
+##############################################################################
+#                       Makefile Generic Structure                           #
+##############################################################################
+include $(BUILD_DIR)/Make.defs
+
+#######################################
+# Machine detection (Uses MINT Makefile.defs.XXX)
+ifdef XCC_MIPSEB
+include $(SRC_DIR)/Makefile.defs.mipseb
+else 
+ifdef XCC_SPARC
+include $(SRC_DIR)/Makefile.defs.sparc
+else
+include $(SRC_DIR)/Makefile.defs.$(shell uname -s | cut -d '_' -f 1)
+endif
+endif
+#######################################
+
+OBJ     =$(OBJ_DIR)/$(ABINAME)_obj
+
+ifdef DEBUG
+DEFS    +=-DDEBUG -DSAFE -D_NOTHREADS
+ifdef DEBUG_SILENT
+DEFS    +=-DDEBUG_SILENT
+else
+ifdef DEBUG2
+DEFS    +=-DDEBUG2=1
+else
+DEFS    +=-DDEBUG2=0
+endif
+endif
+
+else # No DEBUG
+DEFS    +=-DNDEBUG
+DEFS    +=-DDEBUG2=0
+endif # DEBUG
+
+ifdef SESC_LDSTQ_FWD
+DEFS	+= -DLDSTQ_FWD
+endif
+
+VPATH   =$(OBJ):$(SRC_DIR):$(BUILD_DIR):.
+
+##############################################################################
+M4_MACROS = $(SRC_DIR)/libmint/m4.macros
+##############################################################################
+# Defines
+ifdef SESC_SIMPOINT
+DEFS += -DSESC_SIMPOINT
+endif
+
+ifdef TLS
+DEFS += -DTLS
+endif
+
+ifdef MIPS_EMUL
+DEFS += -DMIPS_EMUL
+endif
+
+ifdef LOCKPROFILE
+DEFS    +=-DSESC_LOCKPROFILE
+endif
+
+ifdef SESC_PROTVER
+DEFS += -DPROTVER
+endif
+
+ifdef SESC_ENERGY
+DEFS += -DSESC_ENERGY
+
+DEFS += -DXCACTI
+# Orion Parameters
+#DEFS   += -DPOWER_TEST -DPARM_TECH_POINT=7 -DVdd=1.1 -DPARM_Freq=5e9
+endif
+
+ifdef SESC_SLICE
+DEFS += -DSESC_SLICE
+endif
+
+ifdef SESC_CRIT
+DEFS += -DSESC_CRIT
+endif
+
+ifdef SESC_CRIT
+DEFS += -DSESC_CRIT
+endif
+
+ifdef TS_SPAWN
+DEFS += -DTS_SPAWN
+endif
+
+ifdef ACCESS
+DEFS += -DACCESS
+endif
+
+ifdef DIRECTORY
+DEFS += -DDIRECTORY
+endif
+
+ifdef MPCOH
+DEFS += -DMPCOH
+endif
+
+ifdef SESC_SMP
+DEFS += -DSESC_SMP
+ifdef SESC_SMP_DEBUG
+DEFS += -DSESC_SMP_DEBUG
+endif
+endif
+
+ifdef MEMANALYZER
+DEFS += -DMEMANALYZER
+endif
+
+#####################################
+INC := -I$(OBJ) -I$(SRC_DIR)/libapp -I$(SRC_DIR)/libsuc 
+INC += -I$(SRC_DIR)/libcore -I$(SRC_DIR)/libnet -I$(SRC_DIR)/libmem 
+INC += -I$(SRC_DIR)/libvmem  
+INC += -I$(SRC_DIR)/libll
+ifdef MIPS_EMUL
+INC += -I$(SRC_DIR)/libemul 
+INC += -I$(SRC_DIR)/libmint 
+else
+INC += -I$(SRC_DIR)/libmint 
+endif
+INC += -I$(SRC_DIR)/libpint 
+INC += -I$(SRC_DIR)/libsmp -I. 
+INC += -I$(SRC_DIR)/librst
+##############################################################################
+ifeq ($(findstring IRIX,$(ABINAME)),IRIX)
+LIBS    = -L$(OBJ) -L$(OBJ)/ -lgen -lsesc
+else
+LIBS    = -L$(OBJ)
+endif
+STDLIBS = -lm -lz 
+CFLAGS  = $(ABI) $(COPTS) $(INC) $(PDEFS) $(DEFS)
+LDFLAGS = $(ABI) $(LOPTS)
+
+##############################################################################
+# Native compilation libraries
+ifdef XCC_SPARC 
+CFLAGS +=-DXCC_SPARC
+XLIBS   = -L$(OBJ) -lapp
+else
+ifdef XCC_MIPSEB
+CFLAGS +=-DXCC_MIPSEB
+XLIBS   = -L$(OBJ) -lapp
+else
+XLIBS   = -L$(OBJ) -lapp
+endif
+endif
+
+ifdef SESC_SESCTHERM
+CFLAGS  +=-DAdd_ -DUSE_VENDOR_BLAS=1
+CFLAGS	+=-I$(SRC_DIR)/libsuperlu
+
+CFLAGS	+=-I$(SRC_DIR)/libsesctherm/
+
+CFLAGS  +=-I$(SRC_DIR)/libsesctherm/levmar-2.1.3/
+CFLAGS  +=-L$(SRC_DIR)/libsesctherm/levmar-2.1.3/
+STDLIBS +=$(SRC_DIR)/libsesctherm/levmar-2.1.3/liblevmar.a
+
+CFLAGS  +=-L$(SRC_DIR)/libsesctherm/CLAPACK -L$(SRC_DIR)/libsesctherm/CLAPACK/F2CLIBS
+
+STDLIBS +=-lpthread -lblas 
+endif
+
+STDLIBS += $(XSTDLIBS)
+
+ifdef SESCAPI_NATIVE
+CFLAGS +=-DSESCAPI_NATIVE
+endif
+
+ifdef SESCAPI_NATIVE_IRIX
+CFLAGS +=-DSESCAPI_NATIVE_IRIX
+XLIBS  +=-lfetchop
+endif
+
+##############################################################################
+ifdef SESC_INSTPROF
+DEFS    +=-DINSTPROF
+endif
+ifdef SESC_FUNCINSTPROF
+DEFS    +=-DINSTPROF -DFUNCINSTPROF
+endif
+
+ifdef SESC_MISPATH
+ifndef SESC_ENERGY
+$(warning "mispath without energy? It has a small impact unless energy is considered")
+endif
+DEFS    += -DSESC_MISPATH
+endif
+
+ifdef SESC_NO_LDSTQ
+DEFS    += -DLDSTBUFFER_IGNORE_DEPS
+endif
+
+
+##############################################################################
+# Section for defines specific for different papers. Those are extensions
+# in the simulation (usualy statistics or change in the behavour) that are
+# not interested for normal simulations.
+
+################################################
+# Branch Predictor Weird Tunning Parameters
+
+# Update branch prediction at retire instead of speculative branch
+# prediction update. Check Skadron thesis.
+
+#DEFS    +=-DBPRED_UPDATE_RETIRE
+
+# Resolve branch when it reaches the head of the ROB
+
+#DEFS    +=-DSESC_BRANCH_AT_RETIRE
+
+################################################
+# Bandwidth Analyzer model
+ifdef SESC_BAAD
+DEFS    += -DSESC_BAAD
+endif
+
+################################################
+# Trace Driven
+ifdef TRACE_DRIVEN
+DEFS += -DTRACE_DRIVEN
+ifdef SESC_RSTTRACE
+DEFS += -DSESC_RSTTRACE
+endif
+endif
+
+################################################
+# QEMU 
+ifdef QEMU_DRIVEN
+CXX	:=g++34
+CC	:=gcc34
+DEFS	+= -DQEMU_DRIVEN -I$(SRC_DIR)/../../qemu/sesc/
+#QLIBS	+= $(SRC_DIR)/../../qemu/sparc-*/*.o $(SRC_DIR)/../../qemu/*.o $(SRC_DIR)/../../qemu/sparc-*/*/*.o $(SRC_DIR)/../../qemu/sparc-*/libqemu.a -lSDL -lrt -lutil -lz
+QOBJS   :=vl.o osdep.o monitor.o pci.o loader.o isa_mmio.o block-raw-posix.o lsi53c895a.o usb-ohci.o eeprom93xx.o eepro100.o ne2000.o pcnet.o rtl8139.o sun4m.o tcx.o iommu.o m48t59.o slavio_intctl.o slavio_timer.o slavio_serial.o slavio_misc.o fdc.o esp.o sparc32_dma.o cs4231.o ptimer.o eccmemctl.o sbi.o sun4c_intctl.o gdbstub.o
+QLIBS   += -m64 -Wl,-T,$(SRC_DIR)/../../qemu/x86_64.ld $(patsubst %,$(SRC_DIR)/../../qemu/sparc-softmmu/%,$(QOBJS))
+QLIBS	+= $(SRC_DIR)/../../qemu/libqemu_common.a $(SRC_DIR)/../../qemu/sparc-softmmu/libqemu.a -lSDL -lrt -lutil -lz
+else
+QLIBS	:=
+endif
+
+################################################
+# Thermal model
+ifdef SESC_THERM
+DEFS += -DSESC_THERM
+endif
+
+ifdef SESC_SESCTHERM
+DEFS += -DSESC_SESCTHERM
+endif
+
+################################################
+# HVersion (TaskScalar)
+
+ifdef TASKSCALAR 
+DEFS    += -DTASKSCALAR -DTS_COUNT_TASKS_AHEAD
+
+DEFS    +=-DTS_WRITE
+
+################################################
+# Reset Branch History at task Start
+DEFS    += -DTS_RESET_HISTORY
+
+ifdef VALUEPRED
+DEFS    += -DVALUEPRED
+endif
+
+################################################
+# Silent stores (good!)
+
+ifndef SESC_NO_SILENT_STORE
+DEFS    +=-DSILENT_STORE
+endif
+
+################################################ 
+# When an version reclaim is received it merge all the successors
+
+ifndef TS_BUBBLE
+DEFS    +=-DCLAIM_MERGE_SUCCESSOR
+endif
+
+################################################ 
+# mergeFirst all. Useful to see real overhead
+
+#DEFS   +=-DMERGE_FIRST_ALL
+
+ifdef TS_VMNOPROMOTE
+DEFS    +=-DTS_VMNOPROMOTE
+endif
+################################################ 
+# mergeNext active
+
+ifndef NO_MERGENEXT
+DEFS    +=-DTS_MERGENEXT
+endif
+
+################################################ 
+# mergeLast active
+
+ifndef NO_MERGELAST
+DEFS    +=-DTS_MERGELAST
+endif
+
+################################################ 
+# spawn mechanism
+
+ifdef TS_SPAWN
+DEFS    +=-DTS_SPAWN
+endif
+
+################################################
+# slice processor 
+
+ifdef SESC_SLICE
+DEFS +=-DSESC_SLICE
+endif
+
+################################################
+# Profiling in Rabbit mode
+
+ifdef  TS_PROFILING
+DEFS    +=-DTS_PROFILING
+endif
+
+################################################
+# Risk Load Profiler
+
+ifdef  TS_RISKLOADPROF
+DEFS    +=-DTS_RISKLOADPROF
+endif
+
+ifdef TS_VMEM
+DEFS    += -DTS_VMEM
+
+ifdef VMEM_NO_TRAOPT
+################################################ 
+# Use LVID in the address generation (more assoc)
+DEFS    +=-DVMEM_NO_TRAOPT
+endif
+
+################################################ 
+# Use LVID in the address generation (more assoc)
+#DEFS   +=-DVMEM_LVID_IN_ADDR
+
+# Generate restarts at fetch. Unless debugging, you should be giving
+# an upper limit performance
+DEFS +=-DTS_IMMEDIAT_RESTART
+
+# Simple Promotion
+#DEFS   +=-DVMEM_SIMPLE_PROMOTION
+
+# Use predecessor information from local cache to forward data
+DEFS    +=-DVMEM_PRED_FORWARD
+
+# Implement a directory in the VBus
+#DEFS   +=-DVMEM_DIR
+
+# Use the most/least Speculative bit per cache line
+DEFS    +=-DTS_USE_SPECBITS
+
+endif # TS_VMEM
+
+ifdef TS_CAVA
+DEFS    +=-DTS_CAVA -DTC_PARTIALORDER -DTS_CKPSUPPORT
+endif
+
+# Generate a task trace
+ifdef TS_TIMELINE
+DEFS    +=-DTS_TIMELINE
+endif
+
+# Do not spawn a task (do merge) if the task already has someone ahead
+#DEFS +=-DTS_INORDER
+
+# TLS OOO Statistics
+DEFS +=-DOOO_PAPER_STATS
+
+# Stall Processor support
+ifdef TS_STALL
+DEFS +=-DTS_STALL
+endif
+
+endif # TASKSCALAR
+

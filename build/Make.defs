@@ -1,0 +1,60 @@
+#cleaning up some messy environment variables around ;-)
+#unexport TASKSCALAR
+#unexport VALUEPRED
+#unexport TS_VMEM
+
+CP=cp
+
+#Note that we are ignoring configure's CC, CXX, etc... this is because 
+# these variables are redefined in src/Makefile.defs.XXX to choose the right
+# compiler and options for the different platforms.
+# TODO: configure does a better job in choosing these things, 
+#       so we should use it!
+
+#complilation variables, ignored for now, since we need to change even further 
+#  the makefiles
+#CFLAGS  = @CFLAGS@
+#LDFLAGS = @LDFLAGS@ 
+
+#path variables
+
+BUILD_DIR =/home/hemant/sesc_copy/build
+SRC_DIR   =/home/hemant/sesc_copy/src
+TOPSRC_DIR=/home/hemant/sesc_copy
+OBJ_DIR   =$(BUILD_DIR)/obj
+
+#trick for having all the .depend files in the same directory
+DOTDEPEND=$(OBJ)/.depend.$(SIGNATURE)
+
+DEFS = -DPACKAGE_NAME=\"esesc\" -DPACKAGE_TARNAME=\"esesc\" -DPACKAGE_VERSION=\"2\" -DPACKAGE_STRING=\"esesc\ 2\" -DPACKAGE_BUGREPORT=\"renau@soe.ucsc.edu\ luisceze@cs.uiuc.edu\" 
+
+# defining the make variables 
+# TODO: we need a cleanup in the makefiles so this won't be necessary
+
+#TASKSCALAR=1
+#VALUEPRED=1
+#SESC_ENERGY=1
+#SESC_MISPATH=1
+#TS_VMEM=1
+#DEBUG_SILENT=1
+#DEBUG=1
+#DIRECTORY=1
+#TS_PROFILING=1
+#TS_RISKLOADPROF=1
+#NO_MERGELAST=1
+#NO_MERGENEXT=1
+#SESC_SMP=1
+#SESC_SMP_DEBUG=1
+#SESC_BAAD=1
+
+#SESC_SESCTHERM=1
+#SESC_THERM=1
+#CONDOR_LINK=1
+#TRACE_DRIVEN=1
+#SESC_RSTTRACE=1
+#QEMU_DRIVEN=1
+
+#MIPS_EMUL=1
+#SESC_32BIT=1
+
+#LF_ENABLED=1
