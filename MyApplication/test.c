@@ -1,5 +1,6 @@
 #include "sescapi.h"  
 #include <stdio.h>  
+#include <stdint.h>
 #define NUM_THREADS        2  
 
 void *print_hello_world(void *threadid)  
