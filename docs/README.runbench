@@ -1,0 +1,25 @@
+
+ This file tells you how to run and instrument benchmarks:
+
+
+
+----------
+
+sesc parameters:
+
+-h<int> Memory pool size. In fact, this is a parameter passed to MINT.
+
+-p<int> Number of processors. If you want to override the number of
+processors, you can change it with this parameter.
+
+-w<int> Warm-up instructions to skip. This would put the simulator in
+Rabbit mode for the first <int> instructions. It still would generate
+events, but no memory references.
+
+-cTEXT  Change the configuration file. By default the simulator reads sesc.conf.
+
+-xTEXT Extra key added in the report file name. Very useful when you
+run a set of benchmarks.
+
+-dTEXT  Change the name of the report file.
+

@@ -1,0 +1,335 @@
+/*
+ * Macros for generating multiple versions of functions to simulate an
+ * instruction.
+ *
+ * Copyright (C) 1993 by Jack E. Veenstra (veenstra@cs.rochester.edu)
+ * 
+ * This file is part of MINT, a MIPS code interpreter and event generator
+ * for parallel programs.
+ * 
+ * MINT is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 1, or (at your option)
+ * any later version.
+ * 
+ * MINT is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with MINT; see the file COPYING.  If not, write to
+ * the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+/* If you think m4 source is hard to read, you should try *writing* it! */
+
+/* If this is C code you are reading, this file was machine generated
+ * using m4 macros. See the corresponding file.m4 for the source.
+ */
+
+/* Do not use a comma within a C comment inside an m4 macro!!! */
+
+/* Change the quote character so the input file looks more like C code. */
+changequote(`{', `}')
+
+/* This macro is used repeatedly to generate two versions of a function.
+ * The first version is called for an instruction that is not in the branch
+ * delay slot of the previously executed instruction. The second version
+ * is called for an instruction that is in the branch delay slot of the
+ * previously executed instruction.
+ */
+define(M4_BDELAY_RD,
+/* Normal version */
+OP($1_$2)
+{{ifelse(index(ll_op,$1), 0,
+{{{
+$3
+    return picode->next;
+}}},
+{{{
+$3
+    return picode->next;
+}}}
+)}}
+
+/* This version is for branch delay slots */
+OP($1_{{}}{incr}($2))
+{{ifelse(index(ll_op,$1), 0,
+{{{
+$3
+    return pthread->getTarget();
+}}},
+{{{
+$3
+    return pthread->getTarget();
+}}}
+)}})
+
+/* Byte READ */
+define(M4_BREAD,
+/* Pre-computed address */
+M4_BDELAY_RD($1, 2,
+{
+  RAddr raddr = pthread->getRAddr();
+$3
+})
+
+/* FIXME: replicated methods. Do not index */
+PFPI $1[] = {{{
+$1_2, $1_3, $1_2, $1_3, $1_2, $1_3
+}}};
+)
+
+/* Word READ */
+define(M4_READ,
+/* Pre-computed address */
+M4_BDELAY_RD($1, 2,
+{
+  RAddr raddr = pthread->getRAddr();
+$3
+})
+
+/* FIXME: replicated methods. Do not index */
+PFPI $1[] = {{{
+$1_2, $1_3, $1_2, $1_3, $1_2, $1_3
+}}};
+)
+
+define(M4_SREAD,
+/* Pre-computed address */
+M4_BDELAY_RD($1, 2,
+{
+  RAddr raddr = pthread->getRAddr();
+$3
+})
+
+/* FIXME: replicated methods. Do not index */
+PFPI $1[] = {{{
+$1_2, $1_3, $1_2, $1_3, $1_2, $1_3
+}}};
+)
+
+/* floating point read */
+define(M4_FREAD,
+/* Pre-computed address */
+M4_BDELAY_RD($1, 2,
+{
+  RAddr raddr = pthread->getRAddr();
+$3
+})
+
+/* FIXME: replicated methods. Do not index */
+PFPI $1[] = {{{
+$1_2, $1_3, $1_2, $1_3, $1_2, $1_3
+}}};
+)
+
+/* double floating point read */
+define(M4_DREAD,
+/* Pre-computed address */
+M4_BDELAY_RD($1, 2,
+{
+  RAddr raddr = pthread->getRAddr();
+$3
+})
+
+/* FIXME: replicated methods. Do not index */
+PFPI $1[] = {{{
+$1_2, $1_3, $1_2, $1_3, $1_2, $1_3
+}}};
+)
+
+/* The following macro creates code to check that an address does not
+ * have an active ll (load-linked) operation pending on it. It generates
+ * this check on EVERY WRITE instruction.
+ */
+define(M4_BDELAY_WR,
+/* Normal version */
+OP($1_$2)
+{{ifelse(index(sc_op,$1), 0,
+{{{
+         RAddr raddr;
+$3
+$4
+  pthread->setREG(picode, RT, $5);
+    return picode->next;
+}}},
+{{{
+    /* this is not an sc instruction */
+         RAddr raddr;
+$3
+$4
+    return picode->next;
+}}}
+)}}
+
+/* This version is for branch delay slots */
+OP($1_{{}}{incr}($2))
+{{ifelse(index(sc_op,$1), 0,
+{{{
+         RAddr raddr;
+$3
+$4
+  pthread->setREG(picode, RT, $5);
+    /* Set up the "next" field of the next icode so that the jump occurs
+     * after the write event is generated.
+     */
+    picode->next->next = pthread->getTarget();
+    return picode->next;
+}}},
+{{{
+         RAddr raddr;
+    /* this is not an sc instruction */
+$3
+$4
+    return pthread->getTarget();
+}}}
+)}})
+
+/* The following macro creates code to check that an address does not
+ * have an active ll (load-linked) operation pending on it. It generates
+ * this check only for sc (store-conditional) instructions.
+ */
+define(M4_BDELAY_WR_NO_SYNC,
+/* Normal version */
+OP($1_$2)
+{{ifelse(index(sc_op,$1), 0,
+{{{
+         RAddr raddr;
+$3
+$4
+  pthread->setREG(picode, RT, $5);
+    return picode->next;
+}}},
+{{{
+    /* this is not an sc instruction */
+         RAddr raddr;
+$3
+$4
+    return picode->next;
+}}}
+)}}
+
+/* This version is for branch delay slots */
+OP($1_{{}}{incr}($2))
+{{ifelse(index(sc_op,$1), 0,
+{{{
+         RAddr raddr;
+$3
+$4
+  pthread->setREG(picode, RT, $5);
+    /* Set up the next field of the next picode so that the jump occurs
+     * after the event is generated.
+     */
+    picode->next->next = pthread->getTarget();
+    return picode->next;
+}}},
+{{{
+    /* this is not an sc instruction */
+         RAddr raddr;
+$3
+$4
+    return pthread->getTarget();
+}}}
+)}})
+
+/* arg 5 is the value to write on successful sc; arg 6 is the value to
+ * write on failed sc. When Verify_protocol is set we need to use the value
+ * setup by the back-end.
+ */
+define(M4_WRITE,
+/* Pre-computed address; no verification; test for ll on sc only */
+M4_BDELAY_WR_NO_SYNC($1, 2, raddr = pthread->getRAddr();,
+{
+$2
+}, 1, 0)
+
+PFPI $1[] = {{{
+$1_2, $1_3, $1_2, $1_3, $1_2, $1_3,
+$1_2, $1_3, $1_2, $1_3, $1_2, $1_3
+}}};
+)
+
+define(M4_IN,
+/* normal version */
+OP($1_0)
+{{{
+$2
+    return picode->next;
+}}}
+
+/* branch delay slot version */
+OP($1_1)
+{{{
+$2
+    return pthread->getTarget();
+}}}
+
+PFPI $1[] = {{{ $1_0, $1_1 }}};
+)
+
+/* Define normal version only; no branch delay slot version */
+define(M4_IN1,
+/* normal version */
+OP($1_0)
+{{{
+$2
+    return picode->next;
+}}}
+
+PFPI $1[] = {{{ $1_0, NULL }}};
+)
+
+define(M4_COND_FMT,
+/* single precision normal version */
+OP($1_s_0)
+{{{
+#ifdef MIPS2_FNATIVE
+    pthread->fcr31 = s_$1_s (&FP(ICODEFS), &FP(ICODEFT), pthread->fcr31);
+#else
+    unimplemented_op(picode, pthread);
+#endif
+    return picode->next;
+}}}
+
+/* single precision version for branch delay slots */
+OP($1_s_1)
+{{{
+#ifdef MIPS2_FNATIVE
+    pthread->fcr31 = s_$1_s (&FP(ICODEFS), &FP(ICODEFT), pthread->fcr31);
+#else
+    unimplemented_op(picode, pthread);
+#endif
+    return pthread->getTarget();
+}}}
+
+/* double precision normal version */
+OP($1_d_0)
+{{{
+#ifdef MIPS2_FNATIVE
+    pthread->fcr31 = s_$1_d (DP(ICODEFS), DP(ICODEFT), pthread->fcr31);
+#else
+    unimplemented_op(picode, pthread);
+#endif
+    return picode->next;
+}}}
+
+/* double precision version for branch delay slots */
+OP($1_d_1)
+{{{
+#ifdef MIPS2_FNATIVE
+    pthread->fcr31 = s_$1_d (DP(ICODEFS), DP(ICODEFT), pthread->fcr31);
+#else
+    unimplemented_op(picode, pthread);
+#endif
+    return pthread->getTarget();
+}}}
+
+PFPI $1_s[] = {{{ $1_s_0, $1_s_1 }}};
+PFPI $1_d[] = {{{ $1_d_0, $1_d_1 }}};
+)
+
+/* Local Variables: */
+/* mode: c */
+/* End: */

@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+
+open (fd, @ARGV[0]);
+while($line =<fd>)
+{
+ 	if ($line =~ m/beginscn .sbss.*$/)
+	{
+		$buf = $line;
+		while ($line=<fd> )
+		{
+			$buf=$buf.$line;
+			if ($line =~ m/endscn.*/) 
+			{ $line = <fd>;
+				last; }
+		}
+	}
+
+	if ($line =~ m/beginscn .bss.*$/)
+	{
+		print $buf;
+	}
+	print $line;
+}

@@ -1,0 +1,1095 @@
+#!/bin/bash
+
+# Copyright (C) 2009 Milos Prvulovic
+# Based on CLFS, Copyright © 2005-2009 Joe Ciccone, Jim Gifford, & Ryan Oliver 
+
+# This file is part of SESC and is based on (and heavilly borrows from) CLFS
+# Please read both the SESC (GPL) license and the CLFS (OPL) license before
+# using this program.
+
+# This program, like all of SESC, is distributed in the  hope that  it will  be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+# See the GNU General Public License for more details.
+
+# This script can be used to install a cross-compilation toolchain for MIPS-Linux
+# that can be used to compile executables to run within SESC, and also the basic
+# environment (bash, coreutils, etc.) for the simulated system. It is intended to
+# be used with the --enable-mipsemul configuration of SESC (which correctly emulates
+# MIPS IV instruction set, supports dynamic libraries, process creation, etc.).
+
+# Before running this script, please modify the line that sets the CLFS_ROOT variable
+# to point to the directory where you want the toolchain and basic environment
+# installed.
+
+# To complete the instalation of the basic environment, this script will need to use
+# (run) SESC, so please also modify the line that sets the SIM variable to use the
+# simulator you have built.
+
+# Finally, the MIPS_EMUL feature in SESC supports emulation of 64-bit MIPS executables.
+# To build a cross-compiler for 64-bit executables, modify the line that sets the
+# TARG_LIBS variable from "32" to "64". Although a multilib cross-compilation environment
+# should be possible to build using instructions from CLFS, at this time compilation of
+# eglibc for the "n32" ABI does not work if one follows CLFS instructions, which prevents
+# a successful build of the multi-lib environment.
+
+TARG_ARCH="mips"
+TARG_ARCH_BITS="64"
+TARG_ARCH_SUFX=""
+TARG_MARCH=mips4
+TARG_FLAGS="-fno-delayed-branch -fno-optimize-sibling-calls"
+TARG_LIBS="32"
+if [[ $TARG_LIBS == "mlib" ]]; then
+  TARG_LIBS_DEFAULT="64"
+else
+  TARG_LIBS_DEFAULT=$TARG_LIBS
+fi
+if [[ $TARG_LIBS == "32" ]] && [[ $TARG_ARCH_BITS == "" ]]; then
+  TARG_ARCH_BITS="32"
+else
+  TARG_ARCH_BITS="64"
+fi
+CLFS_ROOT="/home/milos/sim/${TARG_ARCH}${TARG_ARCH_SUFX}root"
+export CLFS_HOST="$(echo $MACHTYPE | sed "s/$(echo $MACHTYPE | cut -d- -f2)/cross/")"
+SIM="/home/milos/sim/runsim/sesc.smp -c /home/milos/sim/sesc/confs/emul.conf -w1000000000000 "
+
+ABI_LIST=( 32  n32  64  )
+ABI_SUFX=( "" "32" "64" )
+
+export CLFS=${CLFS_ROOT}
+echo ${CLFS}
+install -dv ${CLFS}
+install -dv ${CLFS}/tools
+install -dv ${CLFS}/cross-tools
+
+CLFS_TARGET="-unknown-linux-gnu"
+if [[ $TARG_ARCH_BITS == "32" ]] ; then
+  export CLFS_TARGET="$TARG_ARCH""$TARG_ARCH_SUFX""$CLFS_TARGET"
+else
+  CLFS_TARGET="$TARG_ARCH""$TARG_ARCH_BITS""$TARG_ARCH_SUFX""$CLFS_TARGET"
+fi
+if [[ $TARG_MARCH != "" ]]; then
+  TARG_FLAGS="${TARG_FLAGS} -march=${TARG_MARCH}"
+fi
+BUILD32="-mabi=32  ${TARG_FLAGS}"
+BUILDN32="-mabi=n32 ${TARG_FLAGS}"
+BUILD64="-mabi=64 ${TARG_FLAGS}"
+if [[ $TARG_LIBS == "mlib" ]] ; then
+  CLFS_TARGET32="$(echo ${CLFS_TARGET}| sed -e 's/64//g')"
+  BUILD="$BUILD64"
+elif [[ $TARG_LIBS == "32" ]] ; then
+  BUILD="$BUILD32"
+elif [[ $TARG_LIBS == "n32" ]] ; then
+  BUILD="$BUILDN32"
+elif [[ $TARG_LIBS == "64" ]] ; then
+  BUILD="$BUILD64"
+fi
+set +h
+PATH=${CLFS}/cross-tools/bin:$PATH
+unset CFLAGS
+unset CXXFLAGS
+
+cat > versionge.c <<EOF
+#include <stdio.h>
+#include <ctype.h>
+
+int main(int argc, char *argv[]){
+  char *str1; char *str2; int num1, num2;
+  if(argc!=3){
+    printf("Usage: verge <verstr1> <verstr2>\n");
+    return 1;
+  }
+  str1=argv[1]; str2=argv[2];
+  while((*str1)&&!isdigit(*str1)) str1++;
+  while((*str1)&&!isdigit(*str2)) str2++;
+  if(!isdigit(*str1)) return 1;
+  while(isdigit(*str1)&&isdigit(*str2)){
+    for(num1=0;isdigit(*str1);str1++) num1=num1*10+(int)(*str1-'0');
+    for(num2=0;isdigit(*str2);str2++) num2=num2*10+(int)(*str2-'0');
+    if(num1<num2) return 1;
+    if(num1>num2) return 0;
+    if(*str1=='.') str1++;
+    if(*str2=='.') str2++;
+  }
+  if(isdigit(*str2)) return 1;
+  return 0;
+}
+EOF
+gcc -O versionge.c -o versionge
+rm versionge.c
+
+function install_step () {
+  if [[ -s ${PRODUCT} ]] ; then
+    echo "Skipping ${PURPOSE} ${PACKAGE}: seems to be already installed."
+    echo "Delete ${PRODUCT} to force a re-install."
+    return
+  fi
+  for (( FILENUM=0; $FILENUM<${#FILES[*]}; FILENUM=$FILENUM+2 )); do
+    if [[ ${FILES[$FILENUM]} == "" ]] || eval ${FILES[$FILENUM]} ; then {
+      FILENAM=${FILES[$FILENUM+1]##*/}
+      if [[ ! -s ${FILENAM} ]]; then
+        FILEURL=${FILES[$FILENUM+1]##* }
+        echo "$FILENAM not found, downloading from $FILEURL"
+        if wget $FILEURL; then
+          echo Successful download of $FILENAM from $FILEURL
+        else
+          echo Unable to download $FILENAM from $FILEURL, please obtain $FILENAM and retry
+        fi
+      fi
+      NEEDMD5=${FILES[$FILENUM+1]%% *}
+      HAVEMD5=`md5sum ${FILES[$FILENUM+1]##*/}`
+      if [[ ${HAVEMD5%% *} != $NEEDMD5 ]] ; then
+        echo "Wrong checksum for $FILENAM, got ${FILEMD5%% *} need $FILESUM"
+      fi
+    }; fi
+  done
+  rm -rf ${PACKAGE}-${VERSION}
+  if [[ -s ${PACKAGE}-${VERSION}${SUFFIX}.tar.bz2 ]] && \
+     tar xvjf ${PACKAGE}-${VERSION}${SUFFIX}.tar.bz2 > /dev/null ; then
+    echo "Unpacked ${PACKAGE}-${VERSION}${SUFFIX}.tar.bz2"
+  elif [[ -s ${PACKAGE}-${VERSION}${SUFFIX}.tar.gz ]] && \
+       tar xvzf ${PACKAGE}-${VERSION}${SUFFIX}.tar.gz > /dev/null ; then
+    echo "Unpacked ${PACKAGE}-${VERSION}${SUFFIX}.tar.gz"
+  else
+    echo "Could not unpack ${PACKAGE}-${VERSION}${SUFFIX}.tar.(bz2 or gz) for ${PURPOSE} ${PACKAGE}"; exit;
+  fi
+  cd $PACKAGE-${VERSION}
+  for (( PATCH=0; $PATCH<${#PATCHES[*]}; PATCH=$PATCH+2 )); do
+    if [[ ${PATCHES[$PATCH]} == "" ]] || eval ${PATCHES[$PATCH]} ; then {
+      if eval ${PATCHES[$PATCH+1]} ; then
+        echo "Applied patch ${PATCHES[$PATCH+1]} to $PACKAGE-${VERSION}";
+      else
+        echo "Could not apply patch ${PATCHES[$PATCH+1]} to $PACKAGE-${VERSION}"; exit;
+      fi
+    }; fi
+  done
+  cd ..
+  if [[ $SRCBUILD == "T" ]] ; then
+    cd $PACKAGE-${VERSION}
+  else
+    rm -rf build-$PURPOSE-$PACKAGE
+    mkdir build-$PURPOSE-$PACKAGE
+    cd build-$PURPOSE-$PACKAGE
+  fi
+  for (( ACTION=0; $ACTION<${#ACTIONS[*]}; ACTION=$ACTION+2 )); do
+    if [[ ${ACTIONS[$ACTION]} == "" ]] || eval ${ACTIONS[$ACTION]} ; then {
+      if eval ${ACTIONS[$ACTION+1]} ; then
+        echo "Done build command ${ACTIONS[$ACTION+1]} for $PACKAGE-${VERSION}";
+      else
+        echo "Failed buld command ${ACTIONS[$ACTION+1]} for ${PURPOSE} ${PACKAGE}-${VERSION}"; exit;
+      fi
+    }; fi
+  done
+  if [[ -s ${PRODUCT} ]] ; then {
+    cd ..
+    rm -rf ${PACKAGE}-${VERSION}
+    if [[ $SRCBUILD != "T" ]] ; then
+      rm -rf  build-$PURPOSE-$PACKAGE
+    fi
+    echo "Build complete for ${PURPOSE} ${PACKAGE}"
+  }; else
+    echo "Build of ${PURPOSE} ${PACKAGE}-${VERSION} failed to produce ${PRODUCT}"; exit;
+  fi
+}
+
+# Install new host version of findutils
+PACKAGE=findutils
+VERSION=4.4.2
+REQUIRE=4.1.20
+SUFFIX=
+FILES=(
+  ""
+  "351cc4adb07d54877fa15f75fb77d39f http://ftp.gnu.org/gnu/findutils/findutils-4.4.2.tar.gz"
+)
+PATCHES=(
+)
+PURPOSE=host
+PRODUCT=${CLFS_ROOT}/cross-tools/bin/find
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "./configure --prefix=${CLFS_ROOT}/cross-tools >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+if ./versionge "$(find --version | head -n1)" ${REQUIRE}; then
+  echo "Skipping $PURPOSE $PACKAGE because version $REQUIRE or newer is already installed"
+else
+  install_step
+fi
+
+# Install new host version of tar
+PACKAGE=tar
+VERSION=1.22
+REQUIRE=1.14
+SUFFIX=
+FILES=(
+  ""
+  "07fa517027f426bb80f5f5ff91b63585 http://ftp.gnu.org/gnu/tar/tar-1.22.tar.bz2"
+  ""
+  "a8d01d18a3e550230302a5a52c686d25 http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/tar-1.22-man_page-1.patch"
+  ""
+  "95a38ca73a39105a5aee528471c7fcc9 http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/tar-1.22-new_compressors-1.patch"
+)
+PATCHES=(
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-man_page-1.patch >& man-page-patch.log"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-new_compressors-1.patch >& new-compressors-patch.log"
+)
+PURPOSE=host
+PRODUCT=${CLFS_ROOT}/cross-tools/bin/tar
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "./configure --prefix=${CLFS_ROOT}/cross-tools >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+if ./versionge "$(tar --version | head -n1)" ${REQUIRE}; then
+  echo "Skipping $PURPOSE $PACKAGE because version $REQUIRE or newer is already installed"
+else
+  install_step
+fi
+
+# Install Linux kernel headers
+PACKAGE=linux
+VERSION=2.6.29.5
+SUFFIX=
+FILES=(
+  ""
+  "b0bd0fa7889c0af21eee58d096e26175 http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.29.5.tar.bz2"
+)
+PATCHES=(
+)
+PURPOSE=headers
+PRODUCT=${CLFS_ROOT}/tools/include/linux/errno.h
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "install -d ${CLFS_ROOT}/tools/include"
+  ""
+  "make mrproper"
+  ""
+  "make ARCH=mips headers_check >& headers-check.log"
+  ""
+  "make ARCH=mips INSTALL_HDR_PATH=dest headers_install >& headers_install.log"
+  ""
+  "cp -r dest/include/* ${CLFS_ROOT}/tools/include/"
+)
+
+install_step
+
+# Install new host version of file
+PACKAGE=file
+VERSION=5.03
+REQUIRE=5.03
+FILES=(
+  ""
+  "d05f08a53e5c2f51f8ee6a4758c0cc53 ftp://ftp.astron.com/pub/file/file-5.03.tar.gz"
+)
+SUFFIX=
+PATCHES=(
+)
+PURPOSE=host
+PRODUCT=${CLFS_ROOT}/cross-tools/bin/file
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "./configure --prefix=${CLFS_ROOT}/cross-tools >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+if ./versionge "$(file --version | head -n1)" ${REQUIRE}; then
+  echo "Skipping $PURPOSE $PACKAGE because version $REQUIRE or newer is already installed"
+else
+  install_step
+fi
+
+# Install new host version of ncurses (tic)
+PACKAGE=ncurses
+VERSION=5.7
+REQUIRE=5.7
+SUFFIX=
+FILES=(
+  ""
+  "cce05daf61a64501ef6cd8da1f727ec6 ftp://ftp.gnu.org/pub/gnu/ncurses/ncurses-5.7.tar.gz"
+  ""
+  "c6f7f2ab0ebaf7721ebeb266641352db http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/ncurses-5.7-bash_fix-1.patch"
+)
+PATCHES=(
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-bash_fix-1.patch >& bash-fix-patch.log"
+)
+PURPOSE=host
+PRODUCT=${CLFS_ROOT}/cross-tools/bin/tic
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "./configure --prefix=${CLFS_ROOT}/cross-tools \
+   --without-debug --without-shared >& config.log"
+  ""
+  "make -C include >& make-include.log"
+  ""
+  "make -C progs tic >& make-tic.log"
+  ""
+  "install -m755 progs/tic ${CLFS_ROOT}/cross-tools/bin >& install.log"
+)
+if ./versionge "$(tic -V | head -n1)" ${REQUIRE}; then
+  echo "Skipping $PURPOSE $PACKAGE because version $REQUIRE or newer is already installed"
+else
+  install_step
+fi
+
+# Install new host version of GMP
+PACKAGE=gmp
+VERSION=4.3.1
+BUPDATE=N
+REQUIRE=4.3.1
+SUFFIX=
+FILES_gmp=(
+  ""
+  "26cec15a90885042dd4a15c4003b08ae http://ftp.gnu.org/gnu/gmp/gmp-4.3.1.tar.bz2"
+)
+FILES=( "${FILES_gmp[@]}" )
+PATCHES=(
+ "[[ $BUPDATE != \"N\" ]]"
+ "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+)
+PURPOSE=host
+PRODUCT=${CLFS_ROOT}/cross-tools/lib/libgmp.so
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "./configure --prefix=${CLFS_ROOT}/cross-tools >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Install new host version of MPFR
+PACKAGE=mpfr
+VERSION=2.4.1
+REQUIRE=2.4.1
+BUPDATE=2
+SUFFIX=
+FILES_mpfr=(
+  ""
+  "a70bbde2a23d82e8f3314d4293500ae4 http://gforge.inria.fr/frs/download.php/18438/mpfr-2.4.1.tar.bz2"
+  ""
+  "2df45ded7bd8c5b987bb4af75ab1f21c http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/mpfr-2.4.1-branch_update-2.patch"
+  ""
+  "230801af9fe817ce1cff5aa4366602a9 http://www.cc.gatech.edu/~milos/mpfr-2.4.1-milos_fix-1.patch"
+)
+FILES=( "${FILES_mpfr[@]}" )
+PATCHES=(
+ "[[ $BUPDATE != \"N\" ]]"
+ "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+)
+PURPOSE=host
+PRODUCT=${CLFS_ROOT}/cross-tools/lib/libmpfr.so
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "LDFLAGS=\"-Wl,-rpath,${CLFS_ROOT}/cross-tools/lib\" \
+     ./configure --prefix=${CLFS_ROOT}/cross-tools \
+     --enable-shared --with-gmp=${CLFS_ROOT}/cross-tools \
+   >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Binutils for cross-compilation
+PACKAGE=binutils
+VERSION=2.19.1
+BUPDATE=3
+REQUIRE=${VERSION}
+SUFFIX=
+FILES_binutils=(
+  ""
+  "09a8c5821a2dfdbb20665bc0bd680791 http://ftp.gnu.org/gnu/binutils/binutils-2.19.1.tar.bz2"
+  ""
+  "beb4af55c8de949235758e6436e689e7 http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/binutils-2.19.1-posix-1.patch"
+  ""
+  "d12a91e2439d9c8f70c2637cadc7a331 http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/binutils-2.19.1-branch_update-3.patch"
+  ""
+  "008171294bde0cca8ce9cb6efba43734 http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/binutils-2.19.1-genscripts_multilib-1.patch"
+)
+FILES=( "${FILES_binutils[@]}" )
+PATCHES=(
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-posix-1.patch >& posix-1.patch.log"
+  "[[ $BUPDATE != \"N\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-genscripts_multilib-1.patch >&genscripts_multilib-1.patch.log "
+)
+PURPOSE=cross
+PRODUCT=${CLFS_ROOT}/tools/include/libiberty.h
+SRCBUILD=F
+# The --with-lib-path tells the linker where is the default place to search for libraries.
+# It must be specified to prevent the linker from searching the host's lib directory.
+# The --with-lib-path directory is specified relative to the --with-sysroot directory.
+CFGLINE="\
+ AR=ar AS=as ../${PACKAGE}-${VERSION}/configure --prefix=${CLFS_ROOT}/cross-tools \
+ --host=${CLFS_HOST} --target=${CLFS_TARGET} \
+ --with-sysroot=${CLFS_ROOT} --with-lib-path=/tools/lib \
+ --disable-nls --enable-shared\
+"
+if [[ $TARG_ARCH_BITS == "64" ]]; then
+  CFGLINE="${CFGLINE} --enable-64-bit-bfd"
+fi
+ACTIONS=(
+  ""
+  "${CFGLINE} >& config.log"
+  ""
+  "make configure-host >& config-host.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+  ""
+  "cp ../${PACKAGE}-${VERSION}/include/libiberty.h ${CLFS_ROOT}/tools/include"
+)
+if [[ -s ${CLFS_ROOT}/tools/bin/${CLFS_TARGET}-as ]] && \
+   ./versionge "$(${CLFS_ROOT}/tools/bin/${CLFS_TARGET}-as --version | head -n1)" ${REQUIRE}; then
+  echo "Skipping $PURPOSE $PACKAGE because version $REQUIRE or newer is already installed in ${CLFS_ROOT}/tools/bin"
+else
+  install_step
+fi
+
+# Basic GCC to compile glibc
+PACKAGE=gcc
+VERSION=4.4.0
+BUPDATE=3
+SUFFIX=
+if [[ $TARG_LIBS == "64" ]]; then
+  SPECSNM="pure64_specs"
+else
+  SPECSNM="specs"
+fi
+FILES_gcc=(
+  ""
+  "cf5d787bee57f38168b74d65a7c0e6fd ftp://gcc.gnu.org/pub/gcc/releases/gcc-4.4.0/gcc-4.4.0.tar.bz2"
+  ""
+  "0c73735963e43085189e29e8056e63d7 http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/gcc-4.4.0-branch_update-3.patch"
+  "[[ $SPECSNM == \"pure64_specs\" ]]"
+  "7eb1893d7113804cd194b0bb2831ad7a http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/gcc-4.4.0-pure64_specs-1.patch"
+  "[[ $SPECSNM == \"specs\" ]]"
+  "76e36d37161a1b2df151a6c5915000e4 http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/gcc-4.4.0-specs-1.patch"
+  ""
+  "22e096640c1ac70421336cba0f80d70f http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/gcc-4.4.0-posix-1.patch"
+)
+FILES=( "${FILES_gcc[@]}" )
+PATCHES=(
+  "[[ $BUPDATE != \"N\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+# This patch makes dynamic executables built by gcc look for the interpreter (dynamic linker) in
+# /tools/lib* instead of /lib* and we change that back to /lib*
+# The directory name should be specified as a path on the target machine, it is not expanded during
+# compilation, but it is used when the cross-compiled executable is executed on the target machine
+  ""
+  "sed -e \"s@\(/tools/lib\)@/lib@\" ../${PACKAGE}-${VERSION}-${SPECSNM}-1.patch > ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch >& specs-patch.log"
+  ""
+  "rm -f ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-posix-1.patch >& posix-patch.log"
+# The STANDARD_INCLUDE_DIR is where the cross-compiler looks for system include files such as limits.h
+# The directory specified here is relative to the sysroot directory from --with-sysroot
+  ""
+  "echo -en '#undef STANDARD_INCLUDE_DIR\\n#define STANDARD_INCLUDE_DIR \"/dummy/include\"\\n\\n' >> gcc/config/linux.h"
+# The STANDARD_STARTFILE_PREFIX is irrelevant here, it can be anything without affecting correctness
+  ""
+  "echo -en '\\n#undef STANDARD_STARTFILE_PREFIX_1\\n#define STANDARD_STARTFILE_PREFIX_1 \"/dummy/lib/\"\\n' >> gcc/config/linux.h"
+  ""
+  "echo -en '\\n#undef STANDARD_STARTFILE_PREFIX_2\\n#define STANDARD_STARTFILE_PREFIX_2 \"\"\\n' >> gcc/config/linux.h"
+  ""
+  "mv gcc/Makefile.in{,.orig}"
+# The CROSS_SYSTEM_HEADER_DIR is irrelevant here, it can be anything without affecting correctness
+  ""
+  "sed -e \"s@\(^CROSS_SYSTEM_HEADER_DIR =\).*@\1 /dummy/include@g\" gcc/Makefile.in.orig > gcc/Makefile.in"
+  ""
+  "touch ${CLFS_ROOT}/tools/include/limits.h"
+)
+PURPOSE=cross-basic
+PRODUCT=${CLFS_ROOT}/cross-tools/bin/${CLFS_TARGET}-gcc
+SRCBUILD=F
+CFGLINE="\
+ AR=ar LDFLAGS=\"-Wl,-rpath,${CLFS_ROOT}/cross-tools/lib\" \
+ ../${PACKAGE}-${VERSION}/configure --prefix=${CLFS_ROOT}/cross-tools \
+ --build=${CLFS_HOST} --host=${CLFS_HOST} --target=${CLFS_TARGET} \
+ --with-sysroot=${CLFS_ROOT} --with-local-prefix=/tools --disable-nls \
+ --disable-shared --with-mpfr=${CLFS_ROOT}/cross-tools --with-gmp=${CLFS_ROOT}/cross-tools \
+ --without-headers --with-newlib --disable-decimal-float \
+ --disable-libgomp --disable-libmudflap --disable-libssp \
+ --disable-threads --enable-languages=c \
+ --with-abi=${TARG_LIBS_DEFAULT} \
+"
+if [[ $TARG_MARCH != "" ]]; then
+  CFGLINE="${CFGLINE} --with-arch=${TARG_MARCH}"
+fi
+ACTIONS=(
+  ""
+  "${CFGLINE} >& config.log"
+  ""
+  "make all-gcc all-target-libgcc >& make.log"
+  ""
+  "make install-gcc install-target-libgcc >& install.log"
+)
+install_step
+
+# Target's eglibc (multiple versions are made for multilib install)
+PACKAGE=eglibc
+VERSION=2.10.1
+REQUIRE=2.10.1
+SUFFIX=
+if [[ $TARG_LIBS == "mlib" ]]; then
+  ABIS=( 32  n32  64  )
+  DIRS=( "" "32" "64" )
+  OPTS=( "${BUILD32}" "${BUILDN32}" "${BUILD64}" )
+else
+  ABIS=( ${TARG_LIBS} )
+  DIRS=( "" )
+  OPTS=( "${BUILD}" )
+fi
+for (( ABI=0;$ABI<${#ABIS[*]}; ABI=$ABI+1 )); do
+FILES=(
+  ""
+  "7aa42c218bfcfe8b7253e9b829c3a2d6 http://cross-lfs.org/files/packages/svn/eglibc-2.10.1.tar.bz2"
+  ""
+  "5fd870dfdc02d8e2e93525fb7363c34  http://cross-lfs.org/files/packages/svn/eglibc-ports-2.10.1.tar.bz2"
+)
+PATCHES=(
+  ""
+  "tar -jxvf ../${PACKAGE}-ports-${VERSION}.tar.bz2 >& ports-unpack.log"
+  ""
+  "mv Makeconfig{,.orig}"
+  ""
+  "sed -e \"s/-lgcc_eh//g\" Makeconfig.orig > Makeconfig"  
+  "[[ ${ABIS[$ABI]} != "32" ]]"
+  "mv config.make.in{,.orig}"
+  "[[ ${ABIS[$ABI]} != "32" ]]"
+  "sed -e \"/ldd-rewrite-script/s:@:\$\{objdir\}/&:\" config.make.in.orig > config.make.in"
+)
+PURPOSE=target-${ABIS[$ABI]}
+PRODUCT=${CLFS_ROOT}/tools/lib${DIRS[$ABI]}/libc.a
+# The --prefix parameter tells the "make install" command where to create a lib directory which 
+# is then populated with all the libraries. The prefix directory is created if it does not exist
+# If install_root is specified for "make install", then the libraries are prepared to be installed
+# into the --prefix direcotry on the target machine, but on the host machine the --prefix directory
+# is created and populated relative to the install_root directory. This means that we specify for
+# --prefix the name of the directory on the target machine, then in install_root pecify the host
+# directory that is used as the target machine's sysroot
+CFGLINE="\
+ BUILD_CC=\"gcc\" CC=\"${CLFS_TARGET}-gcc ${OPTS[$ABI]}\" \
+   AR=\"${CLFS_TARGET}-ar\" RANLIB=\"${CLFS_TARGET}-ranlib\" \
+   ../${PACKAGE}-${VERSION}/configure --prefix=/tools \
+     --host=${CLFS_TARGET} --build=${CLFS_HOST} \
+     --disable-profile --enable-add-ons \
+     --with-tls --enable-kernel=2.6.0 --with-__thread \
+     --with-binutils=${CLFS_ROOT}/cross-tools/bin \
+     --with-headers=${CLFS_ROOT}/tools/include \
+     --cache-file=config.cache \
+"
+if [[ ${DIRS[$ABI]} != "" ]]; then
+  CFGLINE="${CFGLINE} --libdir=/tools/lib${DIRS[$ABI]}"
+fi
+ACTIONS=(
+  ""
+  "echo \"libc_cv_forced_unwind=yes\" > config.cache"
+  ""
+  "echo \"libc_cv_c_cleanup=yes\" >> config.cache"
+  ""
+  "echo \"libc_cv_gnu99_inline=yes\" >> config.cache"
+  "[[ \"${DIRS[$ABI]}\" != \"\" ]]"
+  "echo \"slibdir=/tools/lib${DIRS[$ABI]}\" >> configparms"
+  ""
+  "${CFGLINE} >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install install_root=${CLFS_ROOT} >& install.log"
+  ""
+  "mv ${CLFS_ROOT}/tools/sbin/ldconfig ${CLFS_ROOT}/tools/sbin/ldconfig${ABIS[$ABI]}"
+)
+if ./versionge "$(readlink ${CLFS_ROOT}/tools/lib${DIRS[$ABI]}/libc.so.6)" ${REQUIRE}; then
+  echo "Skipping $PURPOSE $PACKAGE because version $REQUIRE or newer is already installed"
+else
+install_step
+fi
+done
+
+# Final GCC cross-compiler suite
+PACKAGE=gcc
+VERSION=4.4.0
+BUPDATE=3
+SUFFIX=
+if [[ $TARG_LIBS == "64" ]]; then
+  SPECSNM="pure64_specs"
+else
+  SPECSNM="specs"
+fi
+FILES=( "${FILES_gcc[@]}" )
+PATCHES=(
+  "[[ $BUPDATE != \"N\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+# This patch makes dynamic executables built by gcc look for the interpreter (dynamic linker) in
+# /tools/lib* instead of /lib* and we change that back to /lib*
+# The directory name should be specified as a path on the target machine, it is not expanded during
+# compilation, but it is used when the cross-compiled executable is executed on the target machine
+  ""
+  "sed -e \"s@\(/tools/lib\)@/lib@\" ../${PACKAGE}-${VERSION}-${SPECSNM}-1.patch > ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch >& specs-patch.log"
+  ""
+  "rm -f ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-posix-1.patch >& posix-1-patch.log"
+# The STANDARD_INCLUDE_DIR is irrelevant here, it can be set to anything without afecting correctness
+  ""
+  "echo -en '#undef STANDARD_INCLUDE_DIR\\n#define STANDARD_INCLUDE_DIR \"/dummy/include/\"\\n\\n' >> gcc/config/linux.h"
+# This is where the cross-linker invoked by the cross-compiler looks for crt1.o (and probably other files it needs)
+# The directory specified here is relative to the sysroot directory from --with-sysroot
+  ""
+  "echo -en '\\n#undef STANDARD_STARTFILE_PREFIX_1\\n#define STANDARD_STARTFILE_PREFIX_1 \"/tools/lib/\"\\n' >> gcc/config/linux.h"
+  ""
+  "echo -en '\\n#undef STANDARD_STARTFILE_PREFIX_2\\n#define STANDARD_STARTFILE_PREFIX_2 \"\"\\n' >> gcc/config/linux.h"
+# The CROSS_SYSTEM_HEADER_DIR is where the cross-compiler will look for system header files such as limits.h
+# This directory is specified relative to the actual host filesystem, not relative to the --with-sysroot
+  ""
+  "mv gcc/Makefile.in{,.orig}"
+  ""
+  "sed -e \"s@\(^CROSS_SYSTEM_HEADER_DIR =\).*@\1 ${CLFS_ROOT}/tools/include@g\" gcc/Makefile.in.orig > gcc/Makefile.in"
+)
+PURPOSE=cross
+PRODUCT=${CLFS_ROOT}/cross-tools/bin/${CLFS_TARGET}-g++
+SRCBUILD=F
+# The --with-local-prefix option specifies (among other things) where the cross-compiler will look
+# for the include directory (to find files such as limits.h and time.h). This directory must exist
+# and be populated by header files, libraries, etc. that kernel and glibc install produce.
+# The --with-local-prefix directory is specified relative to the --with-sysroot directory
+CFGLINE="\
+ AR=ar LDFLAGS=\"-Wl,-rpath,${CLFS_ROOT}/cross-tools/lib\" \
+ ../${PACKAGE}-${VERSION}/configure --prefix=${CLFS_ROOT}/cross-tools \
+ --build=${CLFS_HOST} --host=${CLFS_HOST} --target=${CLFS_TARGET} \
+ --with-sysroot=${CLFS_ROOT} --with-local-prefix=/tools --disable-nls \
+ --enable-shared --enable-languages=c,c++,fortran --enable-__cxa_atexit \
+ --with-mpfr=${CLFS_ROOT}/cross-tools --with-gmp=${CLFS_ROOT}/cross-tools \
+ --enable-c99 --enable-long-long --enable-threads=posix \
+ --with-abi=${TARG_LIBS_DEFAULT} \
+"
+if [[ $TARG_MARCH != "" ]]; then
+CFGLINE="${CFGLINE} --with-arch=${TARG_MARCH}"
+fi
+if [[ $TARG_LIBS != "mlib" ]]; then
+  CFGLINE="${CFGLINE} --disable-multilib"
+fi
+ACTIONS=(
+  ""
+  "${CFGLINE} >& config.log"
+  ""
+  "make AS_FOR_TARGET=\"${CLFS_TARGET}-as\" LD_FOR_TARGET=\"${CLFS_TARGET}-ld\" >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Now we will build target's native binaries, such as binutils, gcc, bash, etc.
+
+CC="${CLFS_TARGET}-gcc"
+CXX="${CLFS_TARGET}-g++"
+AR="${CLFS_TARGET}-ar"
+AS="${CLFS_TARGET}-as"
+RANLIB="${CLFS_TARGET}-ranlib"
+LD="${CLFS_TARGET}-ld"
+STRIP="${CLFS_TARGET}-strip"
+
+# Target's GMP
+PACKAGE=gmp
+VERSION=4.3.1
+BUPDATE=N
+REQUIRE=4.3.1
+SUFFIX=
+FILES=( "${FILES_gmp[@]}" )
+PATCHES=(
+ "[[ $BUPDATE != \"N\" ]]"
+ "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/lib/libgmp.so
+SRCBUILD=T
+if [[ $TARG_LIBS == "mlib" ]]; then
+  LIBDIR="--libdir=/tools/lib64"
+else
+  LIBDIR=""
+fi
+ACTIONS=(
+# The --enable-cxx option results in a linking error while building gmp
+  ""
+  "CC=\"${CC} ${BUILD}\"  CXX=\"${CXX} ${BUILD}\" \
+  ./configure --prefix=${CLFS_ROOT}/tools \
+   --build=${CLFS_HOST} --host=${CLFS_TARGET} \
+   ${LIBDIR} \
+   --enable-mpbsd --enable-cxx >& configure.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Target's MPFR
+PACKAGE=mpfr
+VERSION=2.4.1
+REQUIRE=2.4.1
+BUPDATE=2
+SUFFIX=
+FILES=( "${FILES_mpfr[@]}" )
+PATCHES=(
+  "[[ $BUPDATE != \"N\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-milos_fix-1.patch mpfr-longlong.h >& milos-fix-patch.log"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/lib/libmpfr.so
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "CC=\"${CC} ${BUILD}\"  CXX=\"${CXX} ${BUILD}\" \
+   ./configure --prefix=${CLFS_ROOT}/tools \
+    --build=${CLFS_HOST} --host=${CLFS_TARGET} \
+    ${LIBDIR} \
+    --enable-shared >& configure.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Target's zlib
+PACKAGE=zlib
+VERSION=1.2.3
+REQUIRE=1.2.3
+SUFFIX=
+FILES=(
+  ""
+  "b1e6644c97b04c368e11c0a1554f2efe http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/zlib-1.2.3-fPIC-2.patch"
+  ""
+  "debc62758716a169df9f62e6ab2bc634 http://www.zlib.net/zlib-1.2.3.tar.gz"
+)
+PATCHES=(
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-fPIC-2.patch >& fPIC-patch.log"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/lib/libz.so
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "CC=\"${CC} ${BUILD}\" CXX=\"${CXX} ${BUILD}\" \
+   ./configure --prefix=${CLFS_ROOT}/tools \
+   ${LIBDIR} \
+   --shared >& configure.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Target's binutils
+PACKAGE=binutils
+VERSION=2.19.1
+BUPDATE=3
+SUFFIX=
+FILES=( "${FILES_binutils[@]}" )
+PATCHES=(
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-posix-1.patch >& posix-patch.log"
+  "[[ $TARG_LIBS == \"mlib\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-genscripts_multilib-1.patch >&genscripts_multilib-1.patch.log "
+  "[[ $BUPDATE != \"N\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/bin/as
+SRCBUILD=F
+CFGLINE="\
+  CC=\"${CC} ${BUILD}\" CXX=\"${CXX} ${BUILD}\" \
+  ../${PACKAGE}-${VERSION}/configure --prefix=${CLFS_ROOT}/tools \
+  --build=${CLFS_HOST} --host=${CLFS_TARGET} --target=${CLFS_TARGET} \
+  --disable-nls --enable-shared \
+"
+if [[ $TARG_ARCH_BITS == "64" ]]; then
+  CFGLINE="${CFGLINE} --enable-64-bit-bfd"
+fi
+if [[ $TARG_LIBS != "mlib" ]]; then
+  CFGLINE="${CFGLINE} --disable-multilib --with-lib-path=/tools/lib"
+fi
+ACTIONS=(
+  ""
+  "${CFGLINE} >& config.log"
+  ""
+  "make configure-host >& configure-host.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Target's GCC compiler suite
+PACKAGE=gcc
+VERSION=4.4.0
+BUPDATE=3
+SUFFIX=
+if [[ $TARG_LIBS == "64" ]]; then
+  SPECSNM="pure64_specs"
+else
+  SPECSNM="specs"
+fi
+FILES=( "${FILES_gcc[@]}" )
+PATCHES=(
+  "[[ $BUPDATE != \"N\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+# This patch makes dynamic executables built by gcc look for the interpreter (dynamic linker) in
+# /tools/lib* instead of /lib* and we change that back to /lib*
+# The directory name should be specified as a path on the target machine, it is not expanded during
+# compilation, but it is used when the cross-compiled executable is executed on the target machine
+  ""
+  "sed -e \"s@\(/tools/lib\)@/lib@\" ../${PACKAGE}-${VERSION}-${SPECSNM}-1.patch > ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch >& specs-patch.log"
+  ""
+  "rm -f ../${PACKAGE}-${VERSION}-${SPECSNM}-1new.patch"
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-posix-1.patch >& posix-1-patch.log"
+# The STANDARD_INCLUDE_DIR is irrelevant here, it can be set to anything without afecting correctness
+  ""
+  "echo -en '#undef STANDARD_INCLUDE_DIR\\n#define STANDARD_INCLUDE_DIR \"/dummy/include/\"\\n\\n' >> gcc/config/linux.h"
+# This is where the cross-linker invoked by the cross-compiler looks for crt1.o (and probably other files it needs)
+  ""
+  "echo -en '\\n#undef STANDARD_STARTFILE_PREFIX_1\\n#define STANDARD_STARTFILE_PREFIX_1 \"/tools/lib/\"\\n' >> gcc/config/linux.h"
+  ""
+  "echo -en '\\n#undef STANDARD_STARTFILE_PREFIX_2\\n#define STANDARD_STARTFILE_PREFIX_2 \"\"\\n' >> gcc/config/linux.h"
+  ""
+  "mv gcc/Makefile.in{,.orig}"
+  ""
+  "sed -e 's@\(^NATIVE_SYSTEM_HEADER_DIR =\).*@\1 ${CLFS_ROOT}/tools/include@g' gcc/Makefile.in.orig > gcc/Makefile.in"
+  "[[ $TARG_LIBS == \"mlib\" ]]"
+  "mv gcc/Makefile.in{,.orig2}"
+  "[[ $TARG_LIBS == \"mlib\" ]]"
+  "sed -e \"/MULTILIBS/s@\\\$(GCC_FOR_TARGET)@${CLFS_ROOT}/cross-tools/bin/${CC}@g\" gcc/Makefile.in.orig2 > gcc/Makefile.in"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/bin/g++
+SRCBUILD=F
+CFGLINE="\
+  CC=\"${CC} ${BUILD}\" CXX=\"${CXX} ${BUILD}\" \
+  ../${PACKAGE}-${VERSION}/configure --prefix=${CLFS_ROOT}/tools \
+  --build=${CLFS_HOST} --host=${CLFS_TARGET} --target=${CLFS_TARGET} \
+  --with-local-prefix=${CLFS_ROOT}/tools --enable-long-long \
+  --enable-c99 --enable-shared --enable-threads=posix --disable-nls \
+  --enable-__cxa_atexit --enable-languages=c,c++ --disable-libstdcxx-pch \
+  --with-abi=${TARG_ARCH_BITS} \
+"
+if [[ $TARG_LIBS != "mlib" ]]; then
+  CFGLINE="${CFGLINE} --disable-multilib"
+fi
+if [[ $TARG_MARCH != "" ]]; then
+CFGLINE="${CFGLINE} --with-arch=${TARG_MARCH}"
+fi
+ACTIONS=(
+  ""
+  "${CFGLINE} >& config.log"
+  ""
+  "make AS_FOR_TARGET=\"${CLFS_TARGET}-as\" LD_FOR_TARGET=\"${CLFS_TARGET}-ld\" >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+# Target's ncurses
+PACKAGE=ncurses
+VERSION=5.7
+SUFFIX=
+FILES=(
+  ""
+  "cce05daf61a64501ef6cd8da1f727ec6 ftp://ftp.gnu.org/pub/gnu/ncurses/ncurses-5.7.tar.gz"
+  ""
+  "c6f7f2ab0ebaf7721ebeb266641352db http://svn.cross-lfs.org/svn/repos/cross-lfs/trunk/patches/ncurses-5.7-bash_fix-1.patch"
+)
+PATCHES=(
+  ""
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-bash_fix-1.patch >& bash-fix-patch.log"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/bin/tset
+SRCBUILD=T
+ACTIONS=(
+# Removing --without-cxx results in compilation errors 
+  ""
+  "CC=\"${CC} ${BUILD}\" CXX=\"${CC} ${BUILD}\" \
+    ./configure --prefix=/tools --with-install-prefix=${CLFS_ROOT} \
+    --with-shared \
+    --build=${CLFS_HOST} --host=${CLFS_TARGET} \
+    --without-debug --without-ada \
+    --enable-overwrite --with-build-cc=gcc \
+    --without-cxx
+    >& configure.log"
+  ""
+  "make >& make.log"
+  ""           
+  "make install >& install.log"
+)
+install_step
+
+# Target's bash
+PACKAGE=bash
+VERSION=3.1
+BUPDATE=N
+SUFFIX=
+FILES=(
+  "[[ $VERSION == \"3.1\" ]]"
+  "ef5304c4b22aaa5088972c792ed45d72 http://ftp.gnu.org/gnu/bash/bash-3.1.tar.gz"
+)
+PATCHES=(
+  "[[ $VERSION == \"3.2\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-fixes-7.patch"
+  "[[ $BUPDATE != \"N\" ]]"
+  "patch -Np1 -i ../${PACKAGE}-${VERSION}-branch_update-${BUPDATE}.patch >& branch-update-patch.log"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/bin/bash
+SRCBUILD=T
+ACTIONS=(
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"ac_cv_func_mmap_fixed_mapped=yes\" > config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"ac_cv_func_strcoll_works=yes\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"ac_cv_func_working_mktime=yes\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_func_sigsetjmp=present\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_getcwd_malloc=yes\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_job_control_missing=present\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_printf_a_format=yes\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_sys_named_pipes=present\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_ulimit_maxfds=yes\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_under_sys_siglist=yes\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"bash_cv_unusable_rtsigs=no\" >> config.cache"
+  "[[ $VERSION != \"3.1\" ]]"
+  "echo \"gt_cv_int_divbyzero_sigfpe=yes\" >> config.cache"
+  "[[ $VERSION == \"3.1\" ]]"
+  "echo \"ac_cv_func_setvbuf_reversed=no\" >> config.cache"
+  "[[ $VERSION == \"3.1\" ]]"
+  "echo \"bash_cv_sys_named_pipes=yes\" >> config.cache"
+  ""
+  "CFLAGS=\"-DRECYCLES_PIDS ${BUILD}\" LDFLAGS=\"${BUILD}\" \
+    ./configure --prefix=${CLFS_ROOT}/tools \
+    --build=${CLFS_HOST} --host=${CLFS_TARGET} \
+    --without-bash-malloc --cache-file=config.cache >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+  ""
+  "ln -sf bash ${CLFS_ROOT}/tools/bin/sh"
+)
+install_step
+
+PACKAGE=bzip2
+VERSION=1.0.5
+SUFFIX=
+FILES=(
+  ""
+  "3c15a0c8d1d3ee1c46a1634d00617b1a http://www.bzip.org/1.0.5/bzip2-1.0.5.tar.gz"
+)
+PATCHES=(
+  ""
+  "mv Makefile{,.orig}"
+  ""
+  "sed -e 's@^\(all:.*\) test@\1@g' Makefile.orig > Makefile"
+  "[[ \"$TARG_LIBS\" == \"mlib\" ]] && [[ \"$BUILD\" != \"$BUILD32\" ]]"
+  "mv Makefile{,.temp}"
+  "[[ \"$TARG_LIBS\" == \"mlib\" ]] && [[ \"$BUILD\" == \"$BUILD64\" ]]"
+  "sed -e 's@/lib\(/\| \|$\)@/lib64\1@g' Makefile.temp > Makefile"
+  "[[ \"$TARG_LIBS\" == \"mlib\" ]] && [[ \"$BUILD\" == \"$BUILDN32\" ]]"
+  "sed -e 's@/lib\(/\| \|$\)@/lib32\1@g' Makefile.temp > Makefile"
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/bin/bzip2
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "make CC=\"${CC} ${BUILD}\" AR=\"${AR}\" RANLIB=\"${RANLIB}\" >& make.log"
+  ""
+  "make PREFIX=${CLFS_ROOT}/tools install >& install.log"
+)
+install_step
+
+PACKAGE=coreutils
+VERSION=7.4
+SUFFIX=
+FILES=(
+  ""
+  "c52f4f64dda9a245c38e74c09fdd86d2 http://ftp.gnu.org/gnu/coreutils/coreutils-7.4.tar.gz"
+)
+PATCHES=(
+)
+PURPOSE=target
+PRODUCT=${CLFS_ROOT}/tools/bin/yes
+SRCBUILD=T
+ACTIONS=(
+  ""
+  "echo \"fu_cv_sys_stat_statfs2_bsize=yes\" > config.cache"
+  ""
+  "echo \"gl_cv_func_rename_trailing_slash_bug=no\" >> config.cache"
+  ""
+  "CFLAGS=\"${BUILD}\" LDFLAGS=\"${BUILD}\" \
+   ./configure --prefix=${CLFS_ROOT}/tools \
+   --build=${CLFS_HOST} --host=${CLFS_TARGET} \
+   --cache-file=config.cache >& config.log"
+  ""
+  "make >& make.log"
+  ""
+  "make install >& install.log"
+)
+install_step
+
+rm versionge
+
+# Now we need to run ldconfig, but the libraries generated for cross-gcc are in the wrong
+# place, so we link what we must, run ldconfig in the simulator, then link the rest, and clean up
+# Note that simulated ldconfig does not work if we link everything before it runs 
+
+touch ${CLFS_ROOT}/tools/etc/ld.so.conf
+export SESC_FileSys_mount="/tools=${CLFS_ROOT}/tools:/lib=${CLFS_ROOT}/tools/lib"
+if [[ $TARG_LIBS != "mlib" ]] && [[ $TARG_LIBS != "64" ]] ; then
+  ${SIM} ${CLFS_ROOT}/tools/sbin/ldconfig32 -v -i
+else
+  ${SIM} ${CLFS_ROOT}/tools/sbin/ldconfig64 -v -i
+fi
+rm sesc_ldconfig*

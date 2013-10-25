@@ -1,0 +1,20 @@
+
+--------------------------
+Memory Backend implementation:
+
+ Each processor has associated a MemorySystem which provides the interface
+and repository for the dataSource and instrSource of our processor as well
+as those level below them that are private to the processor. Elements defined
+as "shared" go to a global MemoryObjContainer from which they may be retrieved
+by the MemorySystems of other processors when stablishing the corresponding
+links between their MemoryObjs. These links are the upperLevel and lowerLevel
+members of each MemoryObj.
+
+ The std interface for an operation on a MemoryObj is:
+ 1) call to read to read
+ 2) call to write to write
+ 3) when coming back up the hierarchy, objects call returnAccess
+
+ Before calling any of them, the current request to process must be
+stablished using setCurrentReq(req). 
+

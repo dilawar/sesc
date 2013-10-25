@@ -1,0 +1,34 @@
+[SescSpot]
+# This is the frequency information
+Frequency                       2.0e9
+CyclesPerSample                 10000
+InitialTemp                     60
+DTMUsed                         0
+ChipThickness                   0.0005
+DTMTempThreshhold               111.8
+ConvectionCapacitance           140.4
+ConvectionResistance            0.1
+HeatsinkLength                  0.06
+HeatsinkThinkness               0.0069
+SpreaderLength                  0.03
+SpreaderThickness               0.001
+InterfaceMaterialThickness      0.000075
+AmbientTemperature              45
+L2_left		14%	L2:rdHitEnergy	L2:rdMissEnergy	L2:wrHitEnergy
+L2_bottom	72%	L2:rdHitEnergy	L2:rdMissEnergy	L2:wrHitEnergy
+L2_right	14%	L2:rdHitEnergy	L2:rdMissEnergy	L2:wrHitEnergy
+Icache		P(0)_IL1*
+Dcache		P(0)_DL1*
+Bpred		BPred(0)*
+DTB		P(0)_DTLB*
+FPAdd		Cluster(0):fpALU*	Cluster(0):fpDiv*
+FPReg		Proc(0):rdFPRegEnergy	Proc(0):wrFPRegEnergy
+FPMul		Cluster(0):fpMult*
+FPMap		niceCache(0):rdHitEnergy
+IntMap	 	Proc(0):renameEnergy	Proc(0):robEnergy
+IntQ		Proc(0)_FXClusterIssueX*
+IntReg		Proc(0):rdIRegEnergy	Proc(0):wrIRegEnergy
+IntExec		Cluster(0):iALU*	Cluster(0):iMult*	Cluster(0):iDiv*
+FPQ		Proc(0)_FPClusterIssueX*
+LdStQ		FULoad(0)*	FUStore(0)*
+ITB		P(0)_ITLB*

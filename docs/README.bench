@@ -1,0 +1,50 @@
+
+SESC has been build thinking about performance all the time (by performance I mean simulation
+speed). The most important benchmark is the simulator itself, but besides that one, there are
+several benchmarks in tests subdirectories. 
+
+Current benchmarks are found by executing:
+$find . -name '*Bench.cpp'
+
+./libnet/tests/netBench.cpp
+./libsuc/tests/poolBench.cpp
+
+
+Feel free to add benchmarks of your own, or to evaluate them in different platforms. Current results
+in a Pentium-III @ 1GHz
+
+poolBench:    24.26 MPools/s :Sat Dec 28 17:29:20 2002
+poolBench:    24.35 MPools/s :Sat Dec 28 17:30:13 2002 (undefine POOL_RECYCLE)
+
+
+---------------------------------------------
+-  libnet v2 (!congestionFree)  PIII-1GHz   -
+---------------------------------------------
+System ready
+Bench two neighbours message...done
+bench1:  1232.39 KPackets/s or  1410.03 Kclks/s
+Bench heavy traffic...done
+bench2:  1107.59 KPackets/s or   201.58 Kclks/s
+Mix Benchmark...done
+bench3:  1182.43 KPackets/s or   499.62 Kclks/s
+---------------------------------------------
+- libnet v2 (!congestionFree) Athlon-1.5GHz -
+---------------------------------------------
+Bench two neighbours message...done
+bench1:  1767.68 KPackets/s or  2022.46 Kclks/s
+Bench heavy traffic...done
+bench2:  1605.50 KPackets/s or   292.20 Kclks/s
+Mix Benchmark...done
+bench3:  1498.93 KPackets/s or   633.35 Kclks/s
+
+---------------------------------------------
+-  libnet v2  (congestionFree)  PIII-1GHz   -
+---------------------------------------------
+System ready
+Bench two neighbours message...done
+bench1:  1495.73 KPackets/s or  1711.32 Kclks/s
+Bench heavy traffic...done
+bench2:  1576.58 KPackets/s or   286.94 Kclks/s
+Mix Benchmark...done
+bench3:  1639.34 KPackets/s or   692.68 Kclks/s
+

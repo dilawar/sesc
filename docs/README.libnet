@@ -1,0 +1,78 @@
+
+Current network model does not model virtual channels. It works like a network with unlimited
+virtual channels. In the past it was modeling it, but it represented an overhead in simulation time
+and complicated the desing for destroying packets. Since the network would have been tunned to have
+enough virtual channels, it represented a simulation parameter not so interesting for the most
+common desing (not true if the network itself is the target model). For a mesh network of 4x4 (like
+the one used by TaskScalar), the average message latency goes from 8.72 to 8.52 cycles (less than 3%
+difference)
+
+///////////////////////////////////////////////////////////////
+// Design and Implementation of Interconnection Network
+///////////////////////////////////////////////////////////////
+
+class InterConnection;	
+Represent the whole network layout. It provides functions to create the routing table and routers.
+
+class RoutingTable;
+Contain the routing table of one network node. It tells you if you take the shortest path to the destination, which router(s) are the next hop.
+
+class Message;
+Represent the message travelling in the network.
+
+class Router;
+It is a router/switch combintation. It makes the routing decision according to the routing table and, maybe, the ports' traffic information. 
+
+class Flit;
+One message will be split into some flits and these flits forms the worm.
+
+class FlitBuffer;
+A flit queueing(FIFO) buffer.
+
+class Channel;
+Represent physical channel.
+
+class VChannel;
+Represent virtual channel. One physical channel may have sereval virtual channel.
+
+
+// Network Mappings
+
+2x2 Mesh
+
+ 3 <-> 2
+ ^     ^
+ |     |
+ v     v
+ 1 <-> 0
+
+3x3 Mesh (The horizontal links betweek 8 to 6, 5 to 3, and 2 to 0 are missing)
+
+           +-----------+
+           v           |
+ +-> 8 <-> 7 <-> 6 <-+ |
+ |   ^     ^     ^   | |
+ |   |     |     |   | |
+ |   v     v     v   | |
+ |   5 <-> 4 <-> 3   | |
+ |   ^     ^     ^   | |
+ |   |     |     |   | |
+ |   v     v     v   | |
+ +-> 2 <-> 1 <-> 0 <-+ |
+           ^           | 
+           +-----------+
+
+To interact with the network, very likely, you would be required to
+create a new protocol and a new message type. To maintain the naming
+convention coherence please follow this sugestions:
+
+-Objects inherited from ProtocolBase terminate with the name Prot. Ex:
+
+ CacheCoherenceProt
+
+-Objects inherited from PMessage terminate with the name Msg. Ex:
+
+ CacheCoherenceMsg
+
+
+

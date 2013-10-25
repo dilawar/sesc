@@ -1,0 +1,76 @@
+#################
+# Linux specific
+#
+# If MINT_TARGET is defined, it is assumed to have a gcc 3.2 or newer
+# compiler. Valid values are
+#
+# setenv MINT_TARGET 7450 
+#
+# setenv MINT_TARGET g5 
+#
+
+DEFS	+=-DDARWIN
+AABI	:=
+ABI	:=
+ABINAME :=Darwin
+##########################################################
+# gcc
+PDEFS	:=-Wall -W -Wno-unused
+# -Weffc++ some day
+CXX	=g++
+CC	=gcc
+
+ifdef DEBUG
+COPTS	:=-O0 -g -fno-inline-functions $(PDEFS)
+LOPTS	:=-O0
+else
+# -fast does not work by default. Dissable some opts
+COPTS	:=-O3 -g1 -finline-functions -finline-limit=1800
+COPTS +=-funroll-loops -fsched-interblock -fomit-frame-pointer
+LOPTS	:=-O2
+
+ifdef CHUD
+# CHUD OPTIONS
+LOPTS	+=-framework CHUD
+COPTS	+=-DSESC_OSX_CHUD -F/System/Library/PrivateFrameworks
+endif
+endif
+
+# Shared COPTS (do not affect debugging)
+# Plaform Specific
+ifeq ($(shell uname -p), i386)  
+COPTS +=-mfpmath=sse -mmmx -msse -msse2 -msse3  
+COPTS  +=-DLENDIAN
+else
+COPTS +=-faltivec -malign-power -mpowerpc-gpopt -force_cpusubtype_ALL
+COPTS +=-falign-loops=16 -falign-jumps=16 -falign-functions=16 -mdynamic-no-pic 
+COPTS +=-falign-jumps-max-skip=15 -falign-loops-max-skip=15 -malign-natural
+endif
+
+# Machine specific. G4 processor by default
+ifdef MINT_TARGET
+COPTS	+= -mtune=$(MINT_TARGET)
+else 
+ifeq ($(shell uname -p), i386)
+COPTS   += -march=pentium-m -mtune=prescott
+else
+COPTS	+= -mcpu=7450 -mtune=7450
+endif
+endif
+ifdef SESC_SESCTHERM
+XSTDLIBS =-llapack
+endif
+# Platform neutral
+COPTS +=-fno-strict-aliasing -freg-struct-return 
+
+##############################################################################
+ARFLAGS	:=cr
+SHELL	=/bin/bash
+AS	=as
+LD	=ld
+AR	=ar
+M4	=m4
+MAKE	=make
+RANLIB	=ranlib
+FIND	=find
+SED	=sed

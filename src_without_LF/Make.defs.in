@@ -1,0 +1,58 @@
+#cleaning up some messy environment variables around ;-)
+#unexport TASKSCALAR
+#unexport VALUEPRED
+#unexport TS_VMEM
+
+CP=cp
+
+#Note that we are ignoring configure's CC, CXX, etc... this is because 
+# these variables are redefined in src/Makefile.defs.XXX to choose the right
+# compiler and options for the different platforms.
+# TODO: configure does a better job in choosing these things, 
+#       so we should use it!
+
+#complilation variables, ignored for now, since we need to change even further 
+#  the makefiles
+#CFLAGS  = @CFLAGS@
+#LDFLAGS = @LDFLAGS@ 
+
+#path variables
+
+BUILD_DIR =@BUILD_DIR@
+SRC_DIR   =@BUILD_DIR@/@SRC_DIR@
+TOPSRC_DIR=@BUILD_DIR@/@TOPSRC_DIR@
+OBJ_DIR   =$(BUILD_DIR)/obj
+
+#trick for having all the .depend files in the same directory
+DOTDEPEND=$(OBJ)/.depend.$(SIGNATURE)
+
+DEFS = @DEFS@
+
+# defining the make variables 
+# TODO: we need a cleanup in the makefiles so this won't be necessary
+
+@TASKSCALAR_OPT@
+@VALUEPRED_OPT@
+@SESC_ENERGY_OPT@
+@SESC_MISPATH_OPT@
+@TS_VMEM_OPT@
+@DEBUG_SILENT_OPT@
+@DEBUG_OPT@
+@DIRECTORY_OPT@
+@TS_PROFILING_OPT@
+@TS_RISKLOADPROF_OPT@
+@NO_MERGELAST_OPT@
+@NO_MERGENEXT_OPT@
+@SESC_SMP_OPT@
+@SESC_SMP_DEBUG_OPT@
+@SESC_BAAD_OPT@
+@SESC_GATHERM_OPT@
+@SESC_SESCTHERM_OPT@
+@SESC_THERM_OPT@
+@CONDOR_LINK_OPT@
+@TRACE_DRIVEN_OPT@
+@SESC_RSTTRACE_OPT@
+@QEMU_DRIVEN_OPT@
+
+@MIPS_EMUL_OPT@
+@SESC_32BIT_OPT@

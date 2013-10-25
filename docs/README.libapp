@@ -1,0 +1,277 @@
+
+This library is similar to libstub.a from mint. It provides an
+interface for all the functions that interact with the simulator in a
+special way.
+
+The low level simulator (currently only mint is supported) simulates
+all the system calls. Nevertheless, some system calls like the fork
+are not emulated. For example, fork and sproc need to interact with
+the OS because it is not clear when and where are they going to be
+scheduled. Since no OS is provided, those functions interact in a
+special way.
+
+Libapp provides an interface for those functions. If the application
+wants to comunicate with the simulation environment it should be done
+using one of the available functions.
+
+Notice that those functions are defined in sescapi.h. Read that file
+to find the latest additions.
+
+Ideally this library should also provide an clean emulation of
+pthreads. The problem is that porting the whole pthread to the
+simulator is "a little bit time consuming". That's the reason why I
+have a simpler interface for managing threads. Nevertheless, with the
+basic functionality provided here, a pthread compliant interface can
+be implemented without touching the simulator.
+
+The interface provided are the following:
+
+---------------------------
+    THREAD SUPPORT
+---------------------------
+
+void sesc_init();
+
+ This initializes the library. It has to be the first thread API
+ function call in an application, and is mandatory. It's usually done
+ at the begin of the main() function of the application. This
+ implicitly spawns the internal scheduler thread and transforms the
+ single execution unit of the current process into a thread.
+
+int  sesc_spawn(void (*start_routine) (void *),void *arg,long flags);
+
+ Creates a new thread of control that executes concurrently with the
+ calling thread.  The new thread applies the function start_routine
+ passing it arg as first argument. It returns a uniq thread ID. The
+ flags are described in sescapi.h
+
+void sesc_wait();
+
+ Blocks until one of the childs have finished. If there are no childs,
+ it returns automatically. Notice that this is a little bit different
+ from the tradition wait because it does not tell you the pid of the
+ process that just finished. It also does not accept any parameter for
+ error reporting. (Sorry but this is a simulator, not a real system).
+ Special mention are the children of the children. Those are not considered 
+ children.
+
+int sesc_self();
+
+ Returns the current pid.
+
+int sesc_suspend(int pid)
+
+ This suspends a thread pid until it is manually resumed again via
+ sesc_resume. For this, the thread is moved to the SUSPENDED state
+ and this way is completely out of the scheduler's event handling and
+ thread dispatching scope. The function returns TRUE on success and
+ FALSE on errors. Notice that if the thread itself goes to sleep and
+ there are no more RUNNING threads, the system would finish. To
+ suspend current thread call "sesc_suspend(sesc_self())". Of course if
+ you want to terminate execution of the current thread use sesc_exit().
+
+int sesc_resume(int tid)
+
+ This function resumes a previously suspended thread (pid), i.e. pid has
+ to stay on the SUSPENDED state. The thread is moved to a running
+ queue. Typically, it is assigned to the same CPU that it was running
+ before, so that the cache misses are reduced. Nevertheless, if
+ another CPU finishes all the pending threads, it can "steal" work
+ from others CPUs as long as the FLAGS make that possible. The
+ function returns TRUE on success and FALSE on errors (already resumed?).
+
+int sesc_yield(int pid)
+
+ This explicitly yields back the execution control another thread
+ (pid).
+
+ When the pid is -1, it indicates that any thread can be dispatched
+ (event himself if there is no other threads). But if one wants to
+ indicate to the scheduler that a particular thread should be favored
+ on the next dispatching step, one can specify this thread
+ explicitly.  The function usually returns TRUE for success to yield
+ to the tid, and only FALSE if tid specified and invalid or still not
+ new or ready thread.
+
+void sesc_exit(int);
+
+ This terminates the current thread.
+
+---------------------------
+ BARRIER/LOCKS API
+---------------------------
+
+By default all the locks and barrier (no semaphores) try to sleep
+threads by using suspend and resume. Define SESC_DOSPINLOCK when you
+compile the application, and you would use spin locks. Also when the
+application (note that application != sesc) is compiled with DEBUG,
+the system does spin locks.
+
+In case that there is a lot of contention in a single lock, it may be
+interesting to increase MAXLOCKWAITING. This is the maximum number of
+threads that can be suspended/resumed in a lock. If there are more
+threads, the others are spin locking.
+
+1. LOCK/UNLOCK operation
+ slock_t lock; 
+ void sesc_lock_init(slock_t *lock); 
+ void sesc_lock(slock_t *lock);
+ void sesc_unlock(slock_t *lock);
+
+2. Barrier 
+ sbarrier_t barr; 
+ void sesc_barrier_init(sbarrier_t *barr);
+ void sesc_barrier(sbarrier_t *barr, long num_proc);
+
+3. Semaphore
+ ssema_t sema; 
+ void sesc_sema_init(ssema_t *sema, int initValue);
+ void sesc_psema(ssema_t *sema);
+ void sesc_vsema(ssema_t *sema);
+
+c.m4.sesc:
+
+It implements the ANL parmacs. Pplease refer to the comments in the
+file for the definition of supported macros.
+
+
+---------------------------
+ APPLICATION/SIMULATOR API
+---------------------------
+
+To start and to stop the Rabbit mode, a simulation without timmings.
+There are two subroutines to enter/leave the fast simulation mode:
+
+void sesc_fast_sim_begin();
+void sesc_fast_sim_end();
+
+IMPORTANT NOTE: When the simulator runs in fastsim (aka Rabbit mode). There can not
+be context switchs. This means that if the thread is waiting in a lock, it would lock
+for ever because the lock would never be released.
+
+
+EVENTS:
+
+
+
+SESC support several types of events. In all the events, it is
+possible to pass a pointer to some data in the code. Be careful if you
+use the pointer. The original code in SGI is in big endian. If you
+execute the simulation in a little endian machine, you should convert
+from big endian to little endian when you access data through the
+pointer. The big/little endian convertion routines are defined in
+Snippets.h.
+
+IMPORTANT. Check Events.h EvMinType is the number of events reserved
+for the system. This means that you CAN NOT use sesc_preevent(...,3,...);
+
+In the original code it is possible to insert the following
+instrumentation:
+
+//-------------------
+void sesc_preevent(long vaddr, long type, void *sptr)
+
+As soon as the instructions is fetched this event is called. Its
+called before anything is done inside the sesc simulator. This event
+is typicaly used to pass information from the simulator to the
+application. It is may be also used to pass information from the
+application to the simulator, but notice that the timing may be
+strange.
+
+//-------------------
+void sesc_postevent(long vaddr, long type, const void *sptr)
+
+Called when the instruction is executed. The instruction has
+dependences with previous instructions by enforcing the registers R4
+(vaddr) and R6 (sptr). Internally in the sesc the event takes
+resources in the same way that a NOP (consumes fetch, issue, dispatch
+width, and occupy an instruction window slot, and forces
+dependeces). Typically, if R4 and R6 are available, it requires
+"branchDelay" cycles to start to execute. It is very important not to
+write data inside the application through sptr (it is a const). The
+reason is that the postevent is called much latter than the subsequent
+instructions were really executed. (This happens because of the timing
+simulation). Postevent is typically used to pass information from the
+application to the simulation environment. Nevertheless, unless you
+have the absolute requirement to use accurate timing, I strongly
+recommend to use preevent because they are much easier to understand,
+and most of the weird cases are avoided.
+
+//-------------------
+void sesc_memfence(long vaddr)
+
+Called when the instruction is executed. It is performs a memory
+barrier. All the memory operations (load/stores) issued before the
+barrier are executed by the time that the barrier is called. The loads
+and stores issued in the future are not notified to the memory backend
+until the membarrier is notified. This event is not called through the
+OSSim like sesc_preevent and sesc_postevent. It is called through the
+memory backend. Notice, that the memory backend has to acknowledge,
+and no more memory operations are send to the backend until it has
+acknowledge.
+
+1 ST...
+2 LD...
+3 ADD...
+4 memfence
+5 ADD
+6 LD
+7 ST
+
+Valid sequences that the simulator can provide:
+{1,2,3}    4 {5,6,7}
+{1,2}      4 {3,5,6,7}
+{1,2,3,5}  4 {6,7}
+
+
+//-------------------
+void sesc_acquire(long vaddr)
+
+The typical ACQUIRE from Release Consistence. The memory backend gets
+notified by this instruction. In the same way that memfence, the
+backend needs to acknowledge the instruction.
+
+1 ST...
+2 LD...
+3 ADD...
+4 acquire
+5 ADD
+6 LD
+7 ST
+
+There are multiple valid sequences that the simulator can provide. The
+only restriction is that 5, 6, and 7 can not be notified until acquire
+finishes.
+
+{1,2,3}  4 {5,6,7}
+{2,3}    4 {1,5,6,7}
+{1,3}    4 {2,5,6,7}
+{1,2}    4 {3,5,6,7}
+{2}      4 {1,3,5,6,7}
+{}       4 {1,2,3,5,6,7}
+...
+
+//-------------------
+void sesc_release(long vaddr)
+
+The typical RELEASE from Release Consistence. The release is notified
+to the backend as soon as all the previous memory operations have been
+notified to the backend. (Notice, that I say notified no completed)
+
+1 ST...
+2 LD...
+3 ADD...
+4 acquire
+5 ADD
+6 LD
+7 ST
+
+There are multiple valid sequences that the simulator can provide. The
+only restriction is that 1, 2, and 3 can are notified before release.
+
+{1,2,3}     4 {5,6,7}
+{1,2,3,5}   4 {6,7}
+{1,2,3,6}   4 {5,7}
+{1,2,3,5,6} 4 {7}
+...
+

@@ -1,0 +1,30 @@
+
+SMT Processor:
+
+The same branch predictor is shared by all the threads. Only the RAS
+is duplicated (there is a RAS per thread).
+
+Instruction major events:
+
+All the instructions that complete execution go through the following
+execution points
+
+-addInst (Cluster -> DepWindow)
+
+-canIssue (Resource -> Cluster)
+
+-wakeUpDeps (Cluster -> DepWindow)
+
+-select (DepWindow)
+
+-simTime (Resource)
+
+ Called at the end of the select time. It must compute the time when
+ the instruction finishes execution.
+
+-executed (Resource -> Cluster -> DepWindow)
+
+ Called when the instruction finised execution.
+
+-retire (Resource -> Cluster)
+

@@ -1,0 +1,111 @@
+                            ===================
+                            CLAPACK README FILE
+                            ===================
+
+This README file describes how we transform LAPACK from FORTRAN into ANSI C,
+and how to maintain it.
+
+In addition to the routines translated from SRC, one needs to have 
+f2c.h available to compile C source; this is in F2CLIBS. The library 
+F2CLIBS/libF77.a needs to be linked with all routines as well. The library 
+F2CLIB/libI77.a needs to be linked when running the TESTING or TIMING 
+code, but not when using SRC code alone.
+
+The basic translation is done by the Fortran-to-C translator f2c, which
+was written by David Gay at Bell Labs, with subsequent cleanup to improve 
+readability.  The software in the SRC directory, which contains the LAPACK 
+library proper (i.e. no testing code, timing code, or BLAS), is cleaned up 
+most completely, and so is easiest to read. We exploit the facts that these 
+routines do almost no I/O (the few lines of I/O in xLAMCH and XERBLA have 
+the ungainly f2c output replaced by hand; see below), and that they have a 
+standard format for leading comments. The routines in TESTING, TIMING and 
+BLAS are translated, but not cleaned up completely, and so they work but are 
+not as easy to read.
+
+This file describes the translation process in sufficient detail for future 
+maintainers of the software.  The process is almost entirely automated, 
+except for a few files that require some modification by hand.
+
+0. All the software developed for translation and subsequent clean up
+   is in the Translate/ directory.
+
+1. For LAPACK/SRC and BLAS/SRC, translate and clean up by invoking 
+  '../Translate/CompletePolish *.f' from within LAPACK/SRC and BLAS/SRC.
+   CompletePolish invokes five procedures:
+   (1-2) run_stripper: f2c | lenscrub
+         f2c, written by David Gay at Bell Labs, does the main translation
+         from fortran into ANSI C (suitable for compilation with gcc).
+         A lex file (lenscrub.l), originally written by David Gay and
+         modified by us, removes the unwanted string length arguments 
+         introduced by f2c, but does not change the f2c FORTRAN I/O functions 
+         or the ILAENV routine.
+   (3)   run_macro: 
+         better vector and array indexing; from George Levy and Shah 
+	 Datardina at NAG.
+   (4)   run_comment: 
+         A lex file (comment.l) compresses consecutive comment lines into 
+         big chunks by stripping all the "*/{whitespace}/*" sequences.
+   (5)   run_splitter: 
+         A sed script (split.sed) breaks the translated program into several
+         pieces and re-arranges them for better legibility.
+
+2. For LAPACK/TESTING, LAPACK/TIMING and LAPACK/BLAS/TESTING, we only need to 
+   invoke Translate/PartialPolish, which consists of (1-2) and (4) in step 1, 
+   and not the other clean-ups.
+
+3. The routines requiring special treatment are:
+   dlamch.c, slamch.c, dsecnd.c, second.c, lsamen.c, xerbla.c and zeispack.c.
+
+  (1) xLAMCH.f should be translated as follows:
+     (1) Break xLAMCH.f into 6 files: xLAMC[0-5].f corresponding to the 
+         4 SUBROUTINES and 2 FUNCTIONS it contains.
+     (2) Translate and clean-up each of the 6 files individually using 
+         CompletePolish.
+     (3) cat xLAMC[0-5].c into xLAMCH.c 
+
+  (2) In xLAMCH and XERBLA: change the I/O to use standard C I/O (printf)
+      instead of calls to the f2c I/O library. This will permit us to run 
+      code from SRC without linking the f2c I/O library libI77 (TESTING and 
+      TIMING code will use libI77).  There are simple write statements 
+      (just one per subroutine) in the Fortran versions of
+   	   dlamc2
+   	   dlamch
+   	   slamc2
+   	   slamch
+   	   xerbla
+      corresponding to s_wsfe and do_fio in
+	   dlamch
+	   slamch
+	   xerbla
+
+      NOTE: Do the same for BLAS/SRC/xerbla.c
+     
+  (3) second.c and dsecnd.c must be re-written to call the timing function in C.
+
+  (4) lsamen.c
+      Replace i_len() with the strlen() library call in C.
+
+  (5) At the beginning of TIMING/EIG/zeispack.c, add the following line:
+	#define cdabs_ z_abs /* Fix to non-standard complex double abs */
+
+4. In each subdirectory that needs f2c.h, we make a symbolic link to the
+   master copy LAPACK/F2CLIBS/f2c.h. For example, in LAPACK/SRC, we do the 
+   following: "ln -s ../F2CLIBS/f2c.h f2c.h"
+
+James Demmel
+Xiaoye Li		
+Chris Puscasiu
+Steve Timson
+
+UC Berkeley
+Sept 27 1993
+
+
+{Revised by Susan Ostrouchov and Jude Toth}
+ {The University of Tennessee at Knoxville}
+             {October 15, 1993}
+
+{Revised by Xiaoye Li and James Demmel}
+ {University of California at Berkeley}
+             {November 22, 1994}
+

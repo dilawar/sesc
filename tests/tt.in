@@ -1,0 +1,9 @@
+ansi=off
+ponder=off
+noise=0
+st=99999
+ver 5
+setboard 1nbq1r1k/3rbp1p/p1p1pp1Q/1p6/P1pPN3/5NP1/1P2PPBP/R4RK1 w
+sd=2
+move
+end

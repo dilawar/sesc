@@ -1,0 +1,107 @@
+
+This  file a quick list  of  recommendations that I  have to  all the people  that  it is new to the
+simulator  and plan to use it  to research, hobby  or  just want to  understand SESC.  I assume that
+people has already  run the  simulator   (README.compile), and that now    they are interesting   in
+modifying it.
+
+
+Before starting, I must say that the simulator name, SESC, stands for Super ESCalar.   Sorry, I am a
+Spaniard and  I couldn't resist to add  the typical Spanish pronunciation.  I  also  must say to all
+those starting to work with simulators (in general), that the first commit in the cvs server was the
+last Friday 13 of 2001 (2001-07-13).  If this is the first  time that you  work on a simulator, soon
+you would understand how scary they can be.
+
+
+Once you know the name of the simulator you must read all the READMEs in  the docs directory. If you
+want me to even look at your code, you must follow the coding style (README.codingStyle)
+
+
+I started  to code SESC because  my previous simulator  was not modeling all   the parameters that I
+wanted, and it  was becoming   difficult to  understand. Therefore,   SESC tries  to model all   the
+important parameters in a out-of-order core while trying to be simple to extend.
+
+
+The source  code  is distributed in  two  main  components: MINT  (Instruction emulator),  and  SESC
+(Processor timing simulator). The instructions are executed in order in MINT,  and the timing of the
+architecture is done by SESC. This file only tries to explain the main concepts of SESC.
+
+
+The size of the simulator  keeps increasing, and it  is approaching 1MByte  of  C++.  This is a  big
+amount of   data, and it is   very  unlikely that   you would  need to understand   everything to do
+modifications. The source code is distributed in several directories:
+
+libsuc: LIBrary for Specially Useful Code 
+
+src: The core of the simulator
+
+backend: Memory backend of the processor (Caches)
+
+libnet: LIBrary for the Interconnection NETwork (Mesh...)
+
+libapp: LIBrary for applications
+
+benchs: Some code example so that the simulator can be quickly tested
+
+scripts: Bunch of perl scripts to analyze the data produced by SESC.
+
+docs: Documentation
+
+OS: Micro-OS used to handle TLB misses (optional)
+
+m3t, FlexRAM, ...: Architecture specific extensions to the simulator
+
+
+Before starting to hack you would need to have a general feeling of how does the simulator work. My
+suggestion is that you start with libsuc. This library can be compiled by itself and does not need
+additional code from any other module. Those are the steps that I recommend:
+
+-Check the example in libsuc/nanassert.h. This kind of assertions are used through all the code, you
+should  be familiar with the syntax.  If you know NANA  you would see  that the syntax is nearly the
+same.
+
+-The simulator is MOSTLY  an event driven simulator.  The interface for  events are callbacks. Check
+the libsuc/tests/callback_tst.cpp example to understand how do the callbacks work.
+
+-All  the parameters passed   to  the  simulator are   handled by   the   Config class.   Check  the
+tests/Config_tst.cpp to understand the syntax of that class.
+
+
+If you want to do any modification to the processor core, you need to understand the src directory.
+
+-The interface between MINT and SESC is done with ExecutionFlow, Events, MIPSInstruction.cpp, and
+Instruction.h.
+
+When an instruction is executed by MINT a DInst (Dynamic Instruction) is created. This DInst would
+keep "flying" through the pipeline of the processor until it is destroyed when the instruction is
+retired from the ROB. It is one of the main pieces of the simulator.
+
+------------------------------------------------------------------------
+
+Once you got a little bit dizzy of looking to soo much code, you can look for more specific
+examples:
+
+ src/tests/countMemRefs.cpp: A minimal memory backend that counts memory references. Ideal to
+ understand the interface between the core of the simulator and the memory backend.
+
+ src/rabbit.cpp: MINT interface used by sesc. It is also a very fast emulator.
+
+ libnet/tests/tstProt.cpp, libnet/tests/netBench.cpp, libnet/tests/test1.cpp,
+ libnet/tests/test2.cpp: Examples of how to implement a simple network protocol. This is the way
+ that the simulator interfaces with the network.
+
+ libsuc/tests/CacheSample.cpp: The simplest possible example usign the CacheCore class. This class
+ is used in several parts of the simulator (not only the backend)
+
+ libsuc/tests/TstPool.cpp: malloc/free or new/delete are a BAD IDEA during execution time. Use the
+ pool class instead. This is a example showing how to use the pool class. (Heavily used by SESC)
+
+ libsuc/tests/Config_tst.cpp: Always pass parameters to the simulator through the sesc.conf
+ file. This example is an introduction to the Config class.
+
+ scripts/sescTest.pl: If you need to process the statistics generated by sesc in a special
+ way, the sesc.pm module would simplify your life. Check this example before start to code.
+
+ 
+
+
+

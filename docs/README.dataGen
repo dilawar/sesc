@@ -1,0 +1,98 @@
+
+The main reason to have a simulator is to obtain some new data. This
+file explains how to extract data from the simulator.
+
+
+There are three kinds of data that SESC generates: Internal
+statistics, Profile data and Traces.
+
+
+INTERNAL STATISTICS:
+
+Report File Name Determination Process:
+
+ Each time that the simulator runs it generates a file with the
+ "sesc_BENCH.XXXXXX" pattern. Where BENCH is the benchmark name, and
+ XXXXXX is a random number so that it does not conflict with previous
+ generated data.
+
+ The name of the report file can be changed in the following ways:
+
+ -Defining the environment variable REPORTFILE. For example:
+
+ $export REPORTFILE="thiscrapworks.report"
+
+ -Passing to sesc the parameter -xTEXT whould add an additional
+ pattern to the report file. The pattern becomes
+ sesc_TEXT_BENCH.XXXXXX.
+
+ -Passing to sesc the parameter -dTEXT. This overrides the REPORTFILE,
+ and generated the output to the TEXT.XXXXXX.
+
+ -Passing to sesc the parameter -fTEXT. This fixes the extension,
+  so that the report file has the fixed name sesc_BENCH.TEXT
+
+Report File format:
+
+ The report file always follows the same syntax. If you add new
+ statistics remember to use GStats so that the statistics would have
+ the same format. In case that you want to have "more freedom", you
+ can use the Report::field method. REMEMBER that the statistics may be
+ requested during program execution, not only at program
+ termination. Therefore, you must register in the GStats. Look at the
+ InstructionCounter as an example code.
+
+ The report file has two main components the dump of the configuration
+ file parameters used, and the statistics.
+
+ The dump of the configuration parameters is done in such a way that
+ it is possible to reuse it as input for another run. The
+ configuration is contained between
+
+ BEGIN Configuration used. Extracted from "sesc.conf":
+ END Configuration used. Extracted from "sesc.conf":
+
+ The rest of the file has the format:
+
+ KEY:field1=value1:field2=value2:...
+
+ where KEY is the name of the Object that generated the statistics. If
+ there is a vector of objects, it always has the syntax
+ obj(INT). Field1 and field2 is the name of the statistic
+ generated. For example, the branch predictor reports:
+
+BPred_RAS(0):nHit=	13
+BPred_RAS(0):nMiss=	0
+BPred(0):nBranches=	21955
+BPred(0):nMiss=	1257
+
+ This means that the RAS of the Branch Predictor 0 (Execution flow 0),
+ has 13 hits (nHit is the number of hits) and 0 misses (nMiss).
+
+ The total number of branches (nBranches) is 21955.
+ 
+ As you can see, the statistics are dumped in a quite RAW format. To
+ process them you can use the perl script called report.pl. Please, to
+ be consistent try to dump the statistics in that way, and use a perl
+ script to process them.
+
+ To simplify the creation of new perl scripts there is a perl module
+ called sesc.pm.
+
+Report File Generation:
+
+ Always, when the execution has finished generates a report
+ file. Additionaly, it is possible to generate report files as the
+ program keeps executing by sending a kill -SIGUSR1 to the process.
+
+ SECS (OSSim) intercepts the SIGUSR1 and dumps the statistics to
+ another report file. Notice that this would generate a report with
+ statistics that are not finished. Those are un-the-fly statistics.
+
+TRACES:
+
+ Traces are generated whenever the simulator is invoked with the -T
+flag. They are dumped in a file with the same name and extension as
+the report file  but inserting the string ".trace" between them.
+The format of the trace is user-defined.
+

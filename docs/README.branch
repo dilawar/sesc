@@ -1,0 +1,184 @@
+
+The new branch prediction scheme is based on simplescalar 3.0 and
+smt. It simulates different kind of predictors. In adition it is also
+possible to select an oracle for different parts of the branch
+predictor. 
+
+
+
+The prediction scheme is a little bit optimistic because it learns
+just after the branch prediction. The result is a perfect early branch
+resolution, this has very good results. In case that "someone"
+implements the execution of instructions in Resource (out-of-order
+execution), it would be necessary to implement some early resolution
+system for the branch predictors with global history (BP2Level). This
+should be done by modifying the BPredictor::update. I recommend to
+implement the OBQ for fixup the incorrect early updates.
+
+
+
+SESC branch prediction has three components: RAS, BTB, and the
+Taken/Not Taken predictor.
+
+
+------------------------------------- 
+-               RAS                 -
+------------------------------------- 
+
+RAS is the first one to be checked. If the instruction is a function
+call return it only is predicted in RAS. This avoids pollution in BTB
+and T/NT Predictor.
+
+The only parameter in RAS is rasSize. For example:
+
+rasSize = 16
+
+Typical RAS size range between 8 and 64. (16 or 32 are the most
+typical). If you want to have an oracle RAS choose rasSize = 0
+
+
+------------------------------------- 
+-               BTB                 -
+------------------------------------- 
+
+bp_btb_sets 512;
+bp_btb_assoc 4;
+
+Don't go under 4 way associative unless the hardware or power is a
+real issue. The number of total size should be (sets*assoc) should be
+equal than the number of entries in the predictor (l2_size).
+
+Don't go under 128 entries unless strictly necessary (128=64 sets * 2 assoc)
+
+As a thumb rule, check that the BTB accuracy is higher than 90% (95% better)
+
+
+------------------------------------- 
+-     Taken/Not Taken Predictor     -
+------------------------------------- 
+
+Taken/Not Taken predictor is condigured with the "type"
+field. Available branch prediction schemes are:
+
+"Oracle" 	: Perfect branch prediction.
+"NotTaken"	: Predicts all the branches as not taken
+"Taken"		: Predicts all the branches as taken
+"2bit" 		: 2-bit saturating cntr pred (dir mapped)
+"2Level" 	: 2-level correlating pred w/2-bit counters
+"McFarling"
+
+-------
+Examples configuration:
+
+I recomend to read the following paper to understand the predictors:
+"A Comparison of Dynamic Branch Predictors that use Two Levels of
+Branch History" Tse-Yu Yeh amd Yale N.Patt (ISCA-20)
+
+---
+A GAg:  1,8 would be:
+
+type   = "2level"   # BPred2Level:  two level adaptive branch predictor
+l1size = 1          # entries in first level (# of shift register(s))
+shiftWidth=8        # width of shift register(s)
+l2size= 256;        # entries in 2nd level (# of counters, or other FSM)
+
+---
+A GAp:  1,8,512 would be:
+
+type   = "2level"   # BPred2Level:  two level adaptive branch predictor
+l1Size = 1          # entries in first level (# of shift register(s))
+shiftWidth =8       # width of shift register(s)
+l2Size = 512        # entries in 2nd level (# of counters, or other FSM)
+
+---
+A PAg:  2,8 would be:
+
+type   = "2level"   # BPred2Level:  two level adaptive branch predictor
+l1size = 2          # entries in first level (# of shift register(s))
+shiftWidth =8       # width of shift register(s)
+l2size = 256        # entries in 2nd level (# of counters, or other FSM)
+
+---
+A PAp:  4,8,1024 would be:
+
+type   = "2level"   # BPred2Level:  two level adaptive branch predictor
+l1size = 4          # entries in first level (# of shift register(s))
+shiftWidth =8       # width of shift register(s)
+l2size = 1024       # entries in 2nd level (# of counters, or other FSM)
+
+
+Recommendations:
+
+Gshare table is good, only when hardware is not an issue use Mac
+Farling (does not work properly?). For restrictec hardware use 2-bit
+saturating cntr pred ("2bit").
+
+Depends of the benchmark, but the T/NT prediction accuracy should be
+higger than 85%. (95% recommended)
+
+---
+
+---
+Venkat Original BTB has an IPC 2.04 for a 2k BTB entries
+
+---
+My 4 issue SkyRocket Performance Configuration
+
+#McFarling GAp 8,4096 xor Bimod 4096
+
+type      = "McFarling"
+bimodSize = 4096
+l1Size    = 1
+shiftWidth= 8
+l2size    = 4096
+btbSets   = 512
+btbAssoc  = 4
+
+---
+My 4 issue High Performance Configuration
+
+#GAp 8,2048
+
+bp_type 1;
+bp_l1_size 1;
+bp_shift_width 8;
+bp_l2_size 4096;
+bp_btb_sets  512;
+bp_btb_assoc 4;
+
+small crafty 
+  IPC=2.16
+  Accuracy RAS=100.00%,BTB=99.65%,Other=69.65%,T/NT=90.81% 
+  Predictions RAS=10.04%,BTB T=55.73% NT=25.72%,NotTaken= 8.51%
+
+---
+My 4 issue Medium Performance Configuration
+
+#GAg 6,2048
+
+bp_type 1;
+bp_l1_size 1;
+bp_shift_width 6;
+bp_l2_size 2048;
+bp_btb_sets  256;
+bp_btb_assoc 4;
+
+small crafty 
+ IPC 2.03
+ Correctness RAS=100.00%,BTB=99.26%,Other=64.32% 
+ T/NT accuracy 88.72% 
+ Predictions RAS=10.04%,BTB T=55.17% NT=25.50%,NotTaken= 9.30%
+
+---
+My 4 issue Low +Performance Configuration
+
+bp_type 2;
+bp_bimod_size 4096;
+bp_btb_sets  256;
+bp_btb_assoc 2;
+
+small crafty
+ IPC=1.86
+ Correctness RAS=100.00%,BTB=97.44%,Other=55.99% 
+ T/NT accuracy 87.16% 
+ Predictions RAS=10.04%,BTB T=57.32% NT=21.00%,NotTaken=11.65%

@@ -1,0 +1,38 @@
+
+-------------
+Then compile sesc:
+
+$cd esesc
+$mkdir ../build
+$cd ../build
+$../esesc/configure
+$gmake
+
+Check the configure options:
+
+$../esesc/configure --help
+
+gmake would generate a simulator by default (with memory backend sesc.mem). If you
+do not need memory backend compile sesc.tst
+
+$gmake sesc.tst
+
+--------------------------
+Examples of utilization. The directory esesc/tests have some small MIPS examples:
+
+./sesc.tst -h0x800000 -c../esesc/confs/mem.conf ../esec/tests/crafty <../esesc/tests/tt.in
+./sesc.mem -h0xC00000 -c../esesc/confs/mem.conf ../esec/tests/mcf ../esesc/tests/mcf.in
+
+Notice that by default sesc uses sesc.conf as configuration file. Check the file in 
+esec/confs for more configurations.
+
+
+--------------------------
+Only MIPS2 binaries may be included in the distribution. It's a little bit dirty to add them,
+but since only iacoma1 can compile them, I consider them some kind of "code".
+
+--------------------------
+Just to remember. sesc and mint have two compilation mode. Normal and debug. By default non-debug
+is compiled. Enable the debug mode with configure. My recommendation:
+
+$../esesc/configure --enable-debug --enable-debug-silent

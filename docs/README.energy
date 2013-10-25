@@ -1,0 +1,99 @@
+----------------------------------------
+
+How to compile sesc with power:
+
+$export SESC_ENERGY=1
+$gmake distclean
+$make
+
+; Everything should be compile for power
+
+$cd libpower
+$make
+
+; Build tools that would wattchify the configuration file (sesc.conf)
+
+$wattchify <sesc.conf> <tmp.conf>
+$cactify   <tmp.conf>  <power.conf>
+
+
+----------------------------------------
+
+List of variables that could be maintainted for taking power statistics into
+account.
+
+  renamePower : SRAM like struct with 64 entries x log2(nRegs)+2
+
+  File: PendingWindow.cpp
+
+  Structure Sizing:
+    intRegs = SescConf->getLong("cpucore", "intRegs", CPUid );
+    fpRegs  = SescConf->getLong("cpucore", "fpRegs", CPUid );
+
+  Where to add:
+
+    StallCause PendingWindow::addInst(DInst *dinst) 
+
+  bpredPower : Configuration dependent
+
+  File: BPred.cpp
+
+  Structure Sizing:
+  
+    Taken/NotTaken/Oracle: 0
+    
+  rasPower
+
+  windowPower:
+
+   File: PendingWindow.cpp
+
+  StructureSizing:
+
+   MaxWinSize(SescConf->getLong("cpucore", "winSize",i))
+
+
+  wakeupPower
+
+  File: PendingWindow.cpp
+ 
+
+  rsPower
+
+  File : Resource.cpp (all the simTime() )
+
+  Structure Sizing:
+  
+   It is a simple FIFO structure. When an insertion is perfomed (issue/dispatch)
+   all the operands are ready. This structure just holds the instruction until
+   the FU is ready.
+
+   NOTE: Very likely this model is not the same that in wattch. SRAM (wattch may
+   use a FA-SRAM)
+
+
+  lsqPower
+
+  regFilePower
+
+  icache1Power
+
+  dcache1Power
+
+  ucachePower
+
+  dtlbPower
+
+  itlbPower
+
+  aluPower
+
+  faluPower
+
+  resultBusPower
+
+  reorderPower
+
+  clockPower
+ 
+  ambientPower

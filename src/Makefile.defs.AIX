@@ -1,0 +1,45 @@
+#################
+# AIX specific
+
+# PowerPC is big endian so DO NOT USE -DLENDIAN
+DEFS	+=-DAIX -D_BSD
+AABI    :=
+ABI     :=
+ABINAME :=AIX
+ifdef DEBUG
+COPTS   :=-g -O1
+LOPTS	:=-g -O1
+else
+ifdef PERFORMANCE
+COPTS   :=-O1 -pg
+else
+COPTS   :=-O2 -fomit-frame-pointer
+endif # PERFORMANCE
+COPTS   +=-fshort-enums -fno-strict-aliasing -funroll-loops -finline-functions
+COPTS	+=-mcpu=powerpc
+LOPTS	:=-O2
+endif # DEBUG
+PDEFS	:=
+ARFLAGS	:=cr
+
+##############################################################################
+SHELL=bash
+ifdef USEXLC
+COPTS  :=-O2
+LOPTS  :=-O2
+LD	=ld
+CXX	=gcc
+CC	=xlc
+AS	=xlc
+else
+LD	=gcc
+CXX	=g++
+CC	=gcc
+AS	=gcc
+endif
+AR	=ar
+M4	=gm4
+MAKE	=gmake
+RANLIB	=ranlib
+FIND	=gfind
+SED	=sed

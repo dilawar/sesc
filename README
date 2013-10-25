@@ -1,0 +1,103 @@
+HOW TO setup sesc
+-----------------
+
+building sesc
+-------------
+
+1) create a build directory
+
+   Now you can create a directory for the build process:
+
+> cd ../
+> mkdir build
+
+   We recommend that you have one build directory per simulator
+   set of options. You may create as many directories as you want and
+   compile the simulator with different combinations of options (see
+   step 7).
+
+2) go to the build directory
+
+> cd build
+
+3) configure esesc from build
+
+   Run esesc/configure from the build directory (if you don't specify
+   any options, the default configuration will be built; to see all
+   options, type configure --help).
+
+> ../esesc/configure
+
+4) to build all sesc directories:
+
+> make
+
+5) to build the simulator executable:
+
+> make sesc
+
+# Examples of configure parameters:
+#
+# Activate all the checks, but do not have verbose dump
+# ./configure --enable-debug-silent 
+#
+# Activate version memory (taskscalar included in vmem) with silent debug mode
+# ./configure --enable-debug-silent --enable-vmem
+#
+
+Check docs/README.compile for more detailed examples
+
+modifying and testing the simulator
+-----------------------------------
+
+ testing
+ -------
+   If you modify the simulator in esesc, PLEASE test it before you
+   commit the code. To test it in the default configuration, you can
+   simply type make testsim (in the build directory). Please also try
+   testsim-tls.
+
+ commiting
+ ---------
+   Don't forget to do a cvs add for new files and cvs commit in the
+   esesc directory to commit your changes (but before you do that,
+   please make sure the simulator is still working ;o)
+
+ ChangeLog
+ ---------
+   To see the activity, regenerate the ChangeLog by typing gmake ChangeLog
+
+esesc directory structure
+-------------------------
+
+configure     - script to create the Makefiles for build
+configure.ac  - input file for autoconf, to create configure
+confs         - directory that contains several configuration files for 
+                the simulator runs
+COPYING       - copyright notice
+MAINTAINERS   - who is responsible for what description
+scripts       - report and run scripts for sesc
+src           - all real code for sesc is in this
+                directory (description below)
+TODO          - if you have some time available and you want to have
+                some fun, check this file and help improve sesc
+
+src directory structure
+-----------------------
+
+libapp        - patched calls from sesc (these are stubs for system
+                calls emulated by the simulator - the real
+                implementation is in mint/subst.c)
+libcore       - main processor structures
+libmem        - cache/memory backend
+libnet        - multiprocessor networking
+libpower      - power estimation (includes cacti, orion and wattch)
+libsuc        - general purpose code (specially useful code)
+libvmem       - versioning cache backend
+libmint       - functional simulator
+libcc         - Cache Coherence (directory based)
+libsmp        - Cache Coherence (bus snooping)
+librst        - RST SUN traces interface (check docs/README.rst)
+misc          - miscellaneous files
+
+   The other files are mainly associated to the build process.

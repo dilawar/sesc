@@ -1,0 +1,39 @@
+#################
+# SGI specific
+DEFS	+=-DIRIX64
+MMAP	:=1
+ABINAME :=IRIX64o32
+ABI     :=-mips2 -o32 -non_shared
+AABI    :=-mips2 -o32 -non_shared
+ifdef DEBUG
+COPTS   :=-g
+LOPTS	:=
+else
+COPTS   :=-O2
+LOPTS	:=
+endif
+SABI	:=-mips2 -o32 -non_shared
+PDEFS	:=
+ARFLAGS	:=cr
+
+IACOMA1	:=1
+
+##############################################################################
+SHELL	=/bin/sh
+ifdef PURIFY
+CXX	=purify -cache-dir=. CC
+CC	=purify -cache-dir=. cc
+AS	=purify -cache-dir=. as
+LD	=purify -cache-dir=. ld
+else
+CXX	=CC
+CC	=cc
+AS	=as
+LD	=ld
+endif
+AR	=ar
+M4	=m4
+MAKE	=gmake
+RANLIB	=granlib
+FIND	=gfind
+SED	=sed

@@ -1,0 +1,6 @@
+
+-Make librst endian neutral (works on OS X and SPARC but not on x86)
+
+-librst compiles ok, but it still has warnings. We should remove all the
+ compilation warnings (gcc and Sun Studio).
+

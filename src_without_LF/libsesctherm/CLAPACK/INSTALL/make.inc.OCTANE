@@ -1,0 +1,44 @@
+####################################################################
+#  LAPACK make include file.                                       #
+#  LAPACK, Version 3.0                                             #
+#  June 30, 1999                                                   #
+####################################################################
+#
+SHELL = /sbin/sh
+#
+#  The machine (platform) identifier to append to the library names
+#
+PLAT = _OCTANE
+#  
+#  Modify the CC and CFLAGS definitions to refer to the
+#  compiler and desired compiler options for your machine.  NOOPT
+#  refers to the compiler options desired when NO OPTIMIZATION is
+#  selected.  Define LOADER and LOADOPTS to refer to the loader and
+#  desired load options for your machine.
+#
+CC        = cc
+CFLAGS   = -O3 -64 -mips4 -r10000
+LOADER    = cc
+LOADOPTS  = $(CFLAGS)
+NOOPT     = -64 -mips4 -r10000
+DRVCFLAGS = $(CFLAGS)
+F2CCFLAGS = $(CFLAGS)
+#
+#  The archiver and the flag(s) to use when building archive (library)
+#  If you system has no ranlib, set RANLIB = echo.
+#
+ARCH     = ar
+ARCHFLAGS= cr
+RANLIB   = echo
+#
+#  The location of the libraries to which you will link.  (The 
+#  machine-specific, optimized BLAS library should be used whenever
+#  possible.)
+#
+BLASLIB      = ../../blas$(PLAT).a
+LAPACKLIB    = lapack$(PLAT).a
+F2CLIB       = ../../F2CLIBS/libF77.a ../../F2CLIBS/libI77.a
+TMGLIB       = tmglib$(PLAT).a
+EIGSRCLIB    = eigsrc$(PLAT).a
+LINSRCLIB    = linsrc$(PLAT).a
+

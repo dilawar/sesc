@@ -1,0 +1,13 @@
+
+$(OBJ)/libapp.a:$(OBJ)/sesc_thread.o $(OBJ)/sesc_events.o $(OBJ)/sesc_locks.o $(OBJ)/sesc_fortran.o $(OBJ)/sesc_chud.o
+$(OBJ)/sesc_events.o: $(SRC_DIR)/libapp/sesc_events.c $(SRC_DIR)/libapp/sescapi.h $(SRC_DIR)/libapp/simicsapi.h
+$(OBJ)/sesc_fortran.o: $(SRC_DIR)/libapp/sesc_fortran.c $(SRC_DIR)/libapp/sescapi.h $(SRC_DIR)/libapp/simicsapi.h
+$(OBJ)/sesc_locks.o: $(SRC_DIR)/libapp/sesc_locks.c $(SRC_DIR)/libapp/sescapi.h $(SRC_DIR)/libapp/simicsapi.h
+$(OBJ)/sesc_thread.o: $(SRC_DIR)/libapp/sesc_thread.c $(SRC_DIR)/libapp/sescapi.h $(SRC_DIR)/libapp/simicsapi.h
+$(OBJ)/sesc_tls.o: $(SRC_DIR)/libapp/sesc_tls.c $(SRC_DIR)/libapp/sescapi.h $(SRC_DIR)/libapp/simicsapi.h
+$(OBJ)/sesc_ts.o: $(SRC_DIR)/libapp/sesc_ts.c $(SRC_DIR)/libapp/sescapi.h $(SRC_DIR)/libapp/simicsapi.h
+
+
+
+
+

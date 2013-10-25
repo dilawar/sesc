@@ -1,0 +1,47 @@
+#################
+# mipseb-linux specific
+#
+
+DEFS	+=-DLINUX
+AABI	:=
+ABI	:=
+ABINAME :=mipseb
+##########################################################3
+# gcc
+PDEFS	:=-Wall -W -Wno-unused 
+CXX	=mipseb-linux-g++
+CC	=mipseb-linux-gcc
+F77	=mipseb-linux-g77
+AR	=mipseb-linux-ar
+RANLIB	=mipseb-linux-ranlib
+AS	=mipseb-linux-as
+LD	=mipseb-linux-ld
+
+ifdef DEBUG
+COPTS	:=-O1 -g 
+LOPTS	:=-O1 -g
+else
+##########################################################3
+# ! DEBUG
+COPTS	:=-O2
+LOPTS	:=-O2
+endif
+
+MOPTS:=-Wl,--script=/usr/local/mipseb-linux/lib/ldscripts/mint.x -static -mno-abicalls 
+MOPTS+=-Wa,-non_shared -mabi=32
+CCOPTS:=-fomit-frame-pointer -fno-strict-aliasing -finline-limit=1800 
+CCOPTS+=-frename-registers -finline-functions -funroll-loops
+#CCOPTS+=-freduce-all-givs -fmove-all-movables -fgcse -fgcse-lm -fgcse-sm 
+
+COPTS += $(CCOPTS) $(MOPTS) 
+LOPTS += $(CCOPTS) $(MOPTS) 
+##############################################################################
+##############################################################################
+
+ARFLAGS	:=cr
+SHELL	=/bin/sh
+M4	=m4
+MAKE	=make
+FIND	=find
+SED	=sed
+

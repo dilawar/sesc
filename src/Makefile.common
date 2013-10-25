@@ -1,0 +1,135 @@
+$(OBJ)/.placeholder:%/.placeholder:
+	-@if [ ! -d $(patsubst %/.placeholder,%,$@) ] ; then \
+	  mkdir -p $(patsubst %/.placeholder,%,$@) ; \
+	fi
+	-@if [ ! -r $(patsubst %/.placeholder,%,$@)/.placeholder ] ; then \
+	  echo >$(patsubst %/.placeholder,%,$@)/.placeholder ; \
+	fi
+
+-include $(OBJ)/.placeholder
+
+OBJPAT	= $(subst /,\/,$(subst .,\.,$(OBJ)))
+unexport OBJPAT
+
+SRCPAT	= $(subst /,\/,$(subst .,\.,$(SRC_DIR)))
+unexport SRCPAT
+
+ifdef XCC_MIPSEB
+$(OBJ)/mkdep: $(SRC_DIR)/misc/mkdep.cpp $(OBJ)/.placeholder
+	gcc -O2 -o $@ $(SRC_DIR)/misc/mkdep.cpp
+else
+ifdef XCC_SPARC
+$(OBJ)/mkdep: $(SRC_DIR)/misc/mkdep.cpp $(OBJ)/.placeholder
+	gcc -O2 -o $@ $(SRC_DIR)/misc/mkdep.cpp
+else
+$(OBJ)/mkdep: $(SRC_DIR)/misc/mkdep.cpp $(OBJ)/.placeholder
+	$(CXX) $(CFLAGS) -o $@ $(SRC_DIR)/misc/mkdep.cpp
+endif
+endif
+
+depend: $(DOTDEPEND)
+
+$(DOTDEPEND): $(OBJ_DIR)/$(ABINAME)_obj/mkdep $(BUILD_DIR)/config.h
+	-@echo > $(DOTDEPEND)
+ifneq ($(wildcard *.m4),)
+	@$(MAKE) $(MAKEFLAGS) --no-print-directory $(patsubst %.m4,$(OBJ)/%.cpp,$(wildcard *.m4))
+endif
+	@echo -n "\$$(OBJ)/$(SIGNATURE).a:" >$(OBJ)/.depend1.$(SIGNATURE)
+	@echo $(patsubst %.o,$$\(OBJ\)/%.o,$(OBJS)) >>$(OBJ)/.depend1.$(SIGNATURE)
+	$(OBJ_DIR)/$(ABINAME)_obj/mkdep  $(INC) $(DEFS) -- $(wildcard *.cpp *.c) $(wildcard tests/*.cpp tests/*.c) $(patsubst %.m4,$(OBJ)/%.cpp,$(wildcard *.m4)) >>$(OBJ)/.depend1.$(SIGNATURE)
+	@$(SED) -e 's/ $(OBJPAT)/ \$$\(OBJ\)/g' $(OBJ)/.depend1.$(SIGNATURE) > $(OBJ)/.depend2.$(SIGNATURE)
+	@$(SED) -e 's/ $(SRCPAT)/ \$$\(SRC_DIR\)/g' $(OBJ)/.depend2.$(SIGNATURE) >>$(DOTDEPEND)
+	-@rm $(OBJ)/.depend1.$(SIGNATURE) $(OBJ)/.depend2.$(SIGNATURE)
+	-@echo $(DOTDEPENDEXTRA1) >> $(DOTDEPEND)
+	-@echo $(DOTDEPENDEXTRA2) >> $(DOTDEPEND)
+	-@echo $(DOTDEPENDEXTRA3) >> $(DOTDEPEND)
+	-@echo $(DOTDEPENDEXTRA4) >> $(DOTDEPEND)
+	-@echo $(DOTDEPENDEXTRA5) >> $(DOTDEPEND)
+
+ifndef _MAKEFILE_COMMON_SUBSHELL
+_MAKEFILE_COMMON_SUBSHELL=1
+export
+
+%::
+	@$(MAKE) $(MAKEFLAGS) --no-print-directory -f $(SRC_DIR)/Makefile.common $*
+
+else
+
+$(OBJ)/%.o: %.cpp
+	$(CXX) -c $(CFLAGS) -DNANASSERTFILE=\"$(patsubst %.cpp,%,$<)\" $< -o $(OBJ)/$(@F)
+
+$(OBJ)/%.o: %.c
+	$(CC) -c $(CFLAGS) -DNANASSERTFILE=\"$(patsubst %.cpp,%,$<)\" $< -o $(OBJ)/$(@F)
+
+$(OBJ)/%.o: tests/%.c
+	$(CC) -c $(CFLAGS) -DNANASSERTFILE=\"$(patsubst %.cpp,%,$<)\" $< -o $(OBJ)/$(@F)
+
+$(OBJ)/%.o: tests/%.cpp
+	$(CXX) -c $(CFLAGS) -DNANASSERTFILE=\"$(patsubst %.cpp,%,$<)\" $< -o $(OBJ)/$(@F)
+
+$(OBJ)/%.o: $(OBJ)/%.c
+	$(CC) -c $(CFLAGS) -DNANASSERTFILE=\"$(patsubst %.cpp,%,$<)\" $< -o $(OBJ)/$(@F)
+
+$(OBJ)/%.o: %.s
+	$(AS) -c $(ACFLAGS) $< -o $(OBJ)/$(@F)
+
+$(OBJ)/lib%.a:
+	$(AR) cr $@ $^
+	$(RANLIB) $@
+
+$(OBJ)/%.cpp: %.m4 $(M4_MACROS)
+	echo `pwd`
+	$(M4) -B20000 $(M4_MACROS) $< > $(OBJ)/$*.cpp
+
+.PHONY	: clean distclean
+distclean	:	clean edistclean
+	-@echo "Deleting backups:"
+	-@find . -name 'TAGS' -exec rm {} \;
+	-@find . -name '.#*'
+	-@find . -name '*~' -exec rm {} \;
+	-@find . -name '*.bb' -exec rm {} \;
+	-@find . -name '*.bbg' -exec rm {} \;
+	-@find . -name '*.da' -exec rm {} \;
+	-@find . -name 'core.*' -exec echo {} \;
+
+clean	: eclean
+	-@find $(BUILD_DIR) -name '.depend*'
+	-@find $(BUILD_DIR) -name '.depend*' -exec rm {} \;
+ifneq ($(wildcard *.c),)
+	-@for a in $(patsubst %.c,%.o,$(wildcard *.c)) ; \
+	do				\
+		rm -f $(OBJ)/$$a;	\
+	done
+endif
+ifneq ($(wildcard *.cpp),)
+	-@for a in $(patsubst %.cpp,%.o,$(wildcard *.cpp)) ; \
+	do				\
+		rm -f $(OBJ)/$$a;	\
+	done
+endif
+ifneq ($(wildcard *.s),)
+	-@for a in $(patsubst %.s,%.o,$(wildcard *.s)) ; \
+	do				\
+		rm -f $(OBJ)/$$a;	\
+	done
+endif
+ifneq ($(wildcard *.m4),)
+	-@for a in $(patsubst %.m4,%.o,$(wildcard *.m4)) $(patsubst %.m4,%.cpp,$(wildcard *.m4)) ; \
+	do				\
+		rm -f $(OBJ)/$$a;	\
+	done
+endif
+	-@if [ -d "$(OBJ)" -a "`$(FIND) $(OBJ) -print0 2>/dev/null`" = "$(OBJ)$(OBJ)/.placeholder" ] ; then 	\
+		rm -f $(OBJ)/.placeholder ; 		\
+		rmdir $(OBJ) 2>/dev/null ; 				\
+	fi
+	-@if [ -d "$(BUILD_DIR)/obj" -a "`$(FIND) $(OBJ) -print0 2>/dev/null`" = "" ]; then 			\
+		rmdir $(BUILD_DIR)/obj 2>/dev/null ;		\
+	fi
+endif
+
+clean_reports   :
+	-@rm -f sesc_*?.?????? prof_*?.??????
+
+
+# DO NOT DELETE

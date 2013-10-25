@@ -1,0 +1,60 @@
+#################
+# Windows CYGWIN specific
+#
+# If MINT_TARGET is defined, it is assumed to have a gcc 3.2 or newer
+# compiler. Valid values are
+#
+# setenv MINT_TARGET pentium3
+#
+# setenv MINT_TARGET athlon-mp
+#
+# setenv MINT_TARGET itanium
+
+DEFS	+=-DCYGWIN -DLENDIAN  -DNO_FENV_H -DNO_DIRENT64
+AABI	:=
+ABI	:=
+ABINAME :=CYGWIN
+##########################################################
+# gcc Compiler
+PDEFS	:=-Wall -W -Wno-unused 
+CXX	=g++
+CC	=gcc
+
+LOPTS	:=-O2
+ifdef PERFORMANCE
+COPTS	:=-O1 -pg 
+else
+ifdef DEBUG
+COPTS	:=-O0 -g -fno-inline-functions $(PDEFS)
+else
+# -fast does not work by default. Disable some opts
+COPTS	:=-O3 -finline-functions -finline-limit=1800
+endif # DEBUG
+endif # PERFORMANCE
+
+# Shared COPTS (do not affect debugging)
+# Plaform Specific
+COPTS	+=-momit-leaf-frame-pointer -finline-limit=1800
+ifdef MINT_TARGET
+COPTS	+= -march=$(MINT_TARGET)
+else
+COPTS	+= -march=i686
+endif 
+# Platform neutral
+COPTS +=-funroll-loops -fsched-interblock -fomit-frame-pointer
+COPTS +=-ffast-math -fno-strict-aliasing -freg-struct-return 
+##############################################################################
+
+##############################################################################
+
+ARFLAGS	:=cr
+SHELL	=/bin/sh
+AS	=as
+LD	=ld
+AR	=ar
+M4	=m4
+MAKE	=make
+RANLIB	=ranlib
+FIND	=find
+SED	=sed
+

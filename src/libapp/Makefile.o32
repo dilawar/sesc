@@ -1,0 +1,44 @@
+HOME = ..
+
+include $(HOME)/Makefile.mips_comp
+
+ifdef SESC_DOSPINLOCK
+DEFS += -DSESC_DOSPINLOCK=1
+endif
+
+INC  := -I. -I$(HOME)/libsuc -I$(HOME)/src -I$(HOME)/backend -I$(HOME)/../mint/include -I$(HOME)/../mint/src
+
+OBJS := sesc_thread.o sesc_events.o sesc_locks.o
+
+ifdef TLS
+  OBJS +=sesc_tls.o
+  DEFS +=-DTLS
+endif
+
+ifdef TASKSCALAR
+  OBJS +=sesc_ts.o
+  DEFS +=-DTASKSCALAR
+endif
+
+ifdef VALUEPRED
+  DEFS +=-DVALUEPRED
+endif
+
+ifdef MIPS_COMP
+  all : $(OBJ) $(OBJ)/libapp.a
+else
+  all:
+	@echo IRIX64 system or mipseb-linux-gcc required
+endif
+
+$(OBJ)	:
+	@mkdir $(OBJ)
+
+$(OBJ)/libapp.a: $(patsubst %.o,$(OBJ)/%.o,$(OBJS))
+	$(AR) cr $@ $(patsubst %.o,$(OBJ)/%.o,$(OBJS))
+
+$(OBJ)/%.o      :       %.c Makefile
+	$(CC) -c $(ACFLAGS) $(DEFS) $(INC) -o $@ $<
+
+clean	:
+	-@rm $(OBJ)/libapp.a $(patsubst %.o,$(OBJ)/%.o,$(OBJS))

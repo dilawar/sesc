@@ -1,0 +1,568 @@
+divert(-1)
+define(ENDLAB, 5283)
+define(NEWPROC,) dnl
+
+dnl ********************************************************
+dnl * RABBIT_BEGIN()
+dnl * Simulate in fast mode
+dnl ********************************************************
+define(RABBIT_BEGIN,`{
+	sesc_fast_sim_begin();
+}')
+
+dnl ********************************************************
+dnl * RABBIT_END()
+dnl * Simulate in fast mode
+dnl ********************************************************
+define(RABBIT_END,`{
+	sesc_fast_sim_end();
+}')
+
+
+dnl ********************************************************
+dnl * BEGTHREAD() 
+dnl * Marks where the threaded section begins
+dnl ********************************************************
+dnl define(BEGTHREAD,
+dnl `ifdef(`TLS',
+dnl TLS is defined, BEGTHREAD is defined as follows
+dnl `tls_begin_epochs();',
+dnl TLS is not defined, BEGTHREAD is defined as follows
+dnl `{
+dnl }')')
+
+dnl ********************************************************
+dnl * ENDTHREAD() 
+dnl * Marks where the threaded section ends
+dnl ********************************************************
+dnl define(ENDTHREAD,
+dnl `ifdef(`TLS',
+dnl TLS is defined, ENDTHREAD is defined as follows
+dnl `tls_end_epochs();',
+dnl TLS is not defined, ENDTHREAD is defined as follows
+dnl `{
+dnl }')')
+
+define(IGNRACES,
+`ifdef(`TLS',
+`tls_norace_begin()',
+)')
+
+define(MONRACES,
+`ifdef(`TLS',
+`tls_norace_end()',
+)')
+
+define(CONDITION,
+`ifdef(`TLS',
+`tls_condition_end(tls_condition_begin()||($1))',
+)')
+
+dnl ********************************************************
+dnl * BARDEC(<barr_name>) 
+dnl * Decalaration for the barrier variable
+dnl ********************************************************
+define(BARDEC, `sbarrier_t ($1);')
+
+dnl ********************************************************
+dnl * BARINIT(<barr_name>) 
+dnl * Initialization of the barrier variable
+dnl ********************************************************
+define(BARINIT,
+`ifdef(`TLS',
+dnl TLS is defined, BARINIT is defined as follows
+`tls_barrier_init(&($1));',
+dnl TLS is not defined, BARINIT is defined as follows
+`sesc_barrier_init(&($1));'
+)')
+
+dnl ********************************************************
+dnl * BARRIER(<barr_name>, <num_of_proc>) 
+dnl * Call the barrier
+dnl ********************************************************
+define(BARRIER,
+`ifdef(`TLS',
+dnl TLS is defined, BARRIER is defined as follows
+`tls_barrier(&($1), $2);',
+dnl TLS is not defined, BARRIER is defined as follows
+`{
+#ifdef SIMICS
+       SIMICS_ENTER_BARRIER(&($1), $2);
+#endif
+	sesc_barrier(&($1), $2);
+
+#ifdef SIMICS
+       SIMICS_LEAVE_BARRIER(&($1));
+#endif
+}')')
+
+define(GSDEC, `int ($1);')
+define(GSINIT, `{ ($1) = 0; }')
+define(GETSUB, `{ 
+  if (($1)<=($3)) 
+    ($2) = ($1)++; 
+  else { 
+    ($2) = -1; 
+    ($1) = 0; 
+  }
+}')
+
+define(NU_GSDEC, `int ($1);')
+define(NU_GSINIT, `{ ($1) = 0; }')
+define(NU_GETSUB, `GETSUB($1,$2,$3,$4)')
+
+define(ADEC, `int ($1);')
+define(AINIT, `{;}')
+define(PROBEND, `{;}')
+
+dnl ********************************************************
+dnl * LOCKDEC(<lock_name>) 
+dnl * Declaration for the lock variable
+dnl ********************************************************
+define(LOCKDEC, `slock_t ($1);')
+
+dnl ********************************************************
+dnl * LOCKINIT(<lock_name>) 
+dnl * Initialization of the lock variable
+dnl ********************************************************
+define(LOCKINIT,
+`ifdef(`TLS',
+dnl TLS is defined, LOCKINIT is defined as follows
+`tls_lock_init(&($1));',
+dnl TLS is not defined, LOCKINIT is defined as follows
+`sesc_lock_init(&($1));'
+)')
+
+dnl ********************************************************
+dnl * LOCK(<lock_name>) 
+dnl * Acquire the lock
+dnl ********************************************************
+define(LOCK,
+`ifdef(`TLS',
+dnl TLS is defined, LOCK is defined as follows
+`tls_lock(&($1));',
+dnl TLS is not defined, LOCK is defined as follows
+`{
+#ifdef ATOMIC
+        sesc_start_transaction();
+#else
+#ifdef SIMICS
+       SIMICS_START_IGNORE();
+       SIMICS_BEGIN_LOCK(&($1));
+#endif
+	sesc_lock(&($1));
+
+#ifdef SIMICS
+       SIMICS_LOCKED(&($1));
+       SIMICS_STOP_IGNORE();
+#endif
+#endif
+}')')
+
+dnl ********************************************************
+dnl * UNLOCK(<unlock_name>) 
+dnl * Release the lock
+dnl ********************************************************
+define(UNLOCK,
+`ifdef(`TLS',
+dnl TLS is defined, UNLOCK is defined as follows
+`tls_unlock(&($1));',
+dnl TLS is not defined, UNLOCK is defined as follows
+`{
+#ifdef ATOMIC
+        sesc_commit_transaction();
+#else
+#ifdef SIMICS
+       SIMICS_START_IGNORE();
+#endif
+	sesc_unlock(&($1));
+
+#ifdef SIMICS
+       SIMICS_UNLOCK(&($1));
+       SIMICS_STOP_IGNORE();
+#endif
+
+#endif
+}')')
+
+define(NLOCKDEC, `int ($1);')
+define(NLOCKINIT, `{;}')
+define(NLOCK, `{;}')
+define(NUNLOCK, `{;}')
+
+dnl ********************************************************
+dnl * ALOCKDEC(<lock_arr_name>, <num_of_locks>) 
+dnl * Declaration for an array of locks 
+dnl ********************************************************
+define(ALOCKDEC, `slock_t $1[$2];')
+
+dnl ********************************************************
+dnl * ALOCKINIT(<lock_arr_name>, <num_of_locks>) 
+dnl * Initialization of an array of locks
+dnl ********************************************************
+define(ALOCKINIT, `{int i;for(i=0;i<$2;i++){LOCKINIT($1[i]);}}')
+
+dnl ********************************************************
+dnl * ALOCK(<lock_arr_name>, <pos_of_lock>) 
+dnl * Acquire one lock in the arary
+dnl ********************************************************
+define(ALOCK, `LOCK($1[$2])')
+
+dnl ********************************************************
+dnl * AULOCK/AUNLOCK(<lock_arr_name>, <pos_of_lock>) 
+dnl * Release one lock in the array
+dnl ********************************************************
+define(AULOCK,`UNLOCK($1[$2])')
+define(AUNLOCK,`UNLOCK($1[$2])')
+
+dnl ********************************************************
+dnl * PAUSEDEC(<name>[, <dimension>])  
+dnl ********************************************************
+define(PAUSEDEC,
+`ifdef(`TLS',
+dnl TLS is defined, PAUSEDEC is defined as follows
+`ifelse($2,,
+  sflag_t $1;,
+  sflag_t $1[$2];)',
+dnl TLS is not defined, PAUSEDEC is defined as follows
+`
+DECVAR($1,2,ifelse($2,,1,$2),int flag;)
+')')
+
+define(PAUSECAST,
+`ifdef(`TLS',
+dnl TLS is defined, PAUSECAST is defined as follows
+`*((sflag_t *)(&($1)))',
+)')
+
+dnl ********************************************************
+dnl * PAUSEINIT(<name>[, <dimension]>)  
+dnl ********************************************************
+define(PAUSEINIT,
+`ifdef(`TLS',
+`ifelse($2,,`tls_flag_init(&($1));',`APAUSEINIT($1,$2)')',
+`{
+  int p_dummy;
+  AUG_OFF
+  for (p_dummy = 0; (p_dummy < ifelse($2,,1,$2)); p_dummy++)
+    $1[p_dummy].flag = 0;
+  SYS_MONINIT($1,2,ifelse($2,,1,$2))
+  AUG_ON
+}')')
+
+define(APAUSEINIT,
+`ifdef(`TLS',
+`{
+  int flagCnt;
+  for(flagCnt=0;flagCnt<$2;flagCnt++)
+    tls_flag_init(&($1[flagCnt]));
+}',)')
+
+define(CLEARPAUSE,
+`ifdef(`TLS',
+dnl TLS is defined, CLEARPAUSE is defined as follows
+`ifelse($2,,
+  tls_flag_clear(&($1));,
+  tls_flag_clear(&($1[$2]));)',
+dnl TLS is not defined, CLEARPAUSE is defined as follows
+`{
+  register int *lockAddr;
+  AUG_OFF
+  lockAddr = (int *)&($1[ifelse($2,,0,$2)].lock);
+  ST_LOG(ST_EVENT_ENTER, lockAddr )
+  SYS_MENTER($1,ifelse($2,,0,$2))
+  $1[ifelse($2,,0,$2)].flag = 0;
+  SYS_CONTINUE($1,0,ifelse($2,,0,$2))
+  SYS_MEXIT($1,ifelse($2,,0,$2))
+  ST_LOG(ST_EVENT_EXIT, lockAddr)
+  AUG_ON
+}')')
+
+define(SETPAUSE,
+`ifdef(`TLS',
+dnl TLS is defined, SETPAUSE is defined as follows
+`ifelse($2,,
+  tls_flag_set(&($1));,
+  tls_flag_set(&($1[$2]));)',
+dnl TLS is not defined, SETPAUSE is defined as follows
+`{
+  register int *lockAddr;
+  AUG_OFF
+  lockAddr = (int *)&($1[ifelse($2,,0,$2)].lock);
+  ST_LOG(ST_EVENT_ENTER, lockAddr )
+  SYS_MENTER($1,ifelse($2,,0,$2))
+  $1[ifelse($2,,0,$2)].flag = 1;
+  SYS_CONTINUE($1,0,ifelse($2,,0,$2))
+  SYS_MEXIT($1,ifelse($2,,0,$2))
+  ST_LOG(ST_EVENT_EXIT, lockAddr)
+  AUG_ON
+}')')
+
+define(EVENT,
+`{
+  register int *lockAddr;
+  AUG_OFF
+  lockAddr = (int *)&($1[ifelse($2,,0,$2)].lock);
+  ST_LOG(ST_EVENT_ENTER, lockAddr )
+  SYS_MENTER($1,ifelse($2,,0,$2))
+  if ($1[ifelse($2,,0,$2)].flag) {
+    SYS_DELAY($1,0,ifelse($2,,0,$2))
+  }
+  $1[ifelse($2,,0,$2)].flag = 1;
+  SYS_CONTINUE($1,1,ifelse($2,,0,$2))
+  SYS_MEXIT($1,ifelse($2,,0,$2))
+  ST_LOG(ST_EVENT_EXIT, lockAddr)
+  AUG_ON
+}')
+
+define(TRYWAITPAUSE,
+`ifdef(`TLS',
+dnl TLS is defined, TRYWAITPAUSE is defined as follows
+`ifelse($2,,
+  tls_flag_trywait(&($1)),
+  tls_flag_trywait(&($1[$2])))',
+)')
+
+define(WAITPAUSE,
+`ifdef(`TLS',
+dnl TLS is defined, WAITPAUSE is defined as follows
+`ifelse($2,,
+  tls_flag_wait(&($1));,
+  tls_flag_wait(&($1[$2]));)',
+dnl TLS is not defined, WAITPAUSE is defined as follows
+`{
+  register int *lockAddr;
+
+  AUG_OFF
+  lockAddr = (int *)&($1[ifelse($2,,0,$2)].lock);
+  ST_LOG(ST_PAUSE_ENTER,lockAddr)
+  SYS_MENTER($1,ifelse($2,,0,$2))
+  if (!$1[ifelse($2,,0,$2)].flag) {
+    SYS_DELAY($1,0,ifelse($2,,0,$2))
+  }
+  SYS_CONTINUE($1,0,ifelse($2,,0,$2))
+  SYS_MEXIT($1,ifelse($2,,0,$2))
+  ST_LOG(ST_PAUSE_EXIT,lockAddr)
+  AUG_ON
+}')')
+
+define(PAUSE,
+`{
+  register int *lockAddr;
+  AUG_OFF
+  lockAddr = (int *)&($1[ifelse($2,,0,$2)].lock);
+  ST_LOG(ST_PAUSE_ENTER, lockAddr )
+  SYS_MENTER($1,ifelse($2,,0,$2))
+  if (!$1[ifelse($2,,0,$2)].flag) {
+    SYS_DELAY($1,1,ifelse($2,,0,$2))
+  }
+  $1[ifelse($2,,0,$2)].flag = 0;
+  SYS_CONTINUE($1,0,ifelse($2,,0,$2))
+  SYS_MEXIT($1,ifelse($2,,0,$2))
+  ST_LOG(ST_PAUSE_EXIT, lockAddr )
+  AUG_ON
+}')
+
+
+define(AUG_ON, ` ')
+define(AUG_OFF, ` ')
+define(TRACE_ON, ` ')
+define(TRACE_OFF, ` ')
+define(REF_TRACE_ON, ` ')
+define(REF_TRACE_OFF, ` ')
+define(DYN_TRACE_ON, `;')
+define(DYN_TRACE_OFF, `;')
+define(DYN_REF_TRACE_ON, `;')
+define(DYN_REF_TRACE_OFF, `;')
+define(DYN_SIM_ON, `;')
+define(DYN_SIM_OFF, `;')
+define(DYN_SCHED_ON, `;')
+define(DYN_SCHED_OFF, `;')
+define(AUG_SET_LOLIMIT, `;')
+define(AUG_SET_HILIMIT, `;')
+
+define(MENTER, `{;}')
+define(DELAY, `{;}')
+define(CONTINUE, `{;}')
+define(MEXIT, `{;}')
+define(MONINIT, `{;}')
+
+define(SLINIT, `LOCKINIT($1)' )
+
+dnl ********************************************************
+dnl * SEMINIT(<name>, <init_val>)
+dnl * Initialize the semaphore 
+dnl * XXX: We don't support the second parameter <init_val>
+dnl *      It will be initialized to 0
+dnl ********************************************************
+define(SEMINIT, `
+{
+	sesc_sema_init(&($1),$2);
+}')
+
+define(RELEASELOCK, `UNLOCK($1)')
+
+dnl ********************************************************
+dnl * ENQUEUE(<sema_name>)
+dnl * P semaphore 
+dnl ********************************************************
+define(ENQUEUE, `
+{
+  sesc_psema(&($1));
+}')
+
+dnl ********************************************************
+dnl * DEQUEUE(<sema_name>)
+dnl * V semaphore 
+dnl ********************************************************
+define(DEQUEUE, `
+{
+	sesc_vsema(&($1));
+}')
+
+define(SYS_MONINIT,
+`{
+  int mon_dum1, mon_dum2;
+
+  ifelse(eval($2 > 0),1, `
+  for (mon_dum1 = 0; mon_dum1 < $3; mon_dum1++)
+    for (mon_dum2 = 0; mon_dum2 < $2; mon_dum2++) {
+      $1[mon_dum1].count[mon_dum2] = 0;
+      SEMINIT($1[mon_dum1].queue[mon_dum2], 0)
+    }' ,)
+
+  for (mon_dum1 = 0; mon_dum1 < $3; mon_dum1++) 
+    SLINIT($1[mon_dum1].lock, 1)
+}')
+dnl define(SYS_MENTER, `SPINLOCK($1[$2].lock);')
+define(SYS_MENTER, `LOCK($1[$2].lock);')
+define(SYS_DELAY, `
+{
+  $1[$3].count[$2]++;
+  RELEASELOCK($1[$3].lock)
+  ENQUEUE($1[$3].queue[$2]);   
+}')
+define(SYS_CONTINUE, `
+{
+  if ($1[$3].count[$2]) {
+    ($1[$3].count[$2])--;
+    DEQUEUE($1[$3].queue[$2])   
+  } else
+    RELEASELOCK($1[$3].lock)   
+  goto `L'ENDLAB;
+`LGO'ENDLAB: ;
+}')
+
+define(SYS_MEXIT, `
+{
+  RELEASELOCK($1[$2].lock); `L'ENDLAB: ; 
+  define(`ENDLAB', eval(ENDLAB+1))
+}')
+
+dnl ********************************************************
+dnl * WAIT_FOR_END(<num_of_proc>)
+dnl * The master node uses this to wait for all the other
+dnl * nodes to finish
+dnl ********************************************************
+define(WAIT_FOR_END, `{
+	int i;
+	for (i = 0; i < $1; i++)
+		sesc_wait();
+}')
+
+define(DECVAR, `
+  struct {                                                    
+    LOCKDEC(lock)
+    ifelse(eval($2 > 0), 1, `int count[$2]; ssema_t queue[$2];',)
+    $4                       
+  } $1[$3];
+')
+    
+dnl ********************************************************
+dnl * CREATE(<thread_entry>[, <arg_for_thread>])
+dnl * Create a thread to perform the work
+dnl ********************************************************
+define(CREATE, `
+	sesc_spawn($1, ifelse($2,,NULL,$2), 0);
+')
+
+dnl ********************************************************
+dnl * MAIN_INITENV
+dnl * Initialize the sesc environment
+dnl ********************************************************
+define(MAIN_INITENV, `{
+	sesc_init();
+}')
+
+dnl ********************************************************
+dnl * MAIN_END
+dnl * Called by the master node to terminate the app
+dnl ********************************************************
+define(MAIN_END, `{exit(0);}')
+
+dnl ********************************************************
+dnl * MAIN_ENV
+dnl * Include header files and declare global variables
+dnl ********************************************************
+define(MAIN_ENV,` 
+	#include <fcntl.h>
+	#include <sys/time.h>
+
+	#include "sescapi.h"
+
+        struct timeval sc_tp;
+')
+
+define(ENV, ` ')
+
+dnl ********************************************************
+dnl * EXTERN_ENV
+dnl * Include header files and externly declare some variables
+dnl ********************************************************
+define(EXTERN_ENV, ` 
+	#include <fcntl.h>
+	#include <sys/time.h>
+
+	#include "sescapi.h"
+
+  extern struct timeval sc_tp;
+')
+
+define(G_MALLOC, `malloc($1);')
+define(G_FREE, `free($1);')
+define(G_MALLOC_F, `malloc($1)')
+define(NU_MALLOC, `malloc($1);')
+define(NU_FREE, `free($1);')
+define(NU_MALLOC_F, `malloc($1)')
+
+define(GET_HOME, `{($1) = 0;}')
+define(GET_PID, `{($1) = 0;}')
+define(AUG_DELAY, `{sleep ($1);}')
+define(ST_LOG, `{;}')
+define(SET_HOME, `{;}')
+define(CLOCK,
+`ifdef(`TLS',
+dnl TLS is defined, CLOCK is defined as follows
+`$1=0;',
+dnl TLS is not defined, CLOCK is defined as follows
+`{
+  if (gettimeofday (&sc_tp, (struct timezone *)0))
+	{
+    perror (""); 
+		fprintf (stderr, "error in clock macro\n"); 
+		exit (-1);
+	}
+  $1 = (sc_tp.tv_sec & 0x7ff)*1000000 + sc_tp.tv_usec;
+}')')
+
+define(SIM_STAT_RESET, `;')
+define(SIM_ON, `;')
+define(SIM_OFF, `;')
+define(SIM_TRACE_ON, `;')
+define(SIM_TRACE_OFF, `;')
+
+define(STARTSIM,)
+define(ENDSIM,)
+define(GETNCPUS,$1=sesc_get_num_cpus())
+
+divert(0)
