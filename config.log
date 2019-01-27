@@ -27,6 +27,10 @@ hostinfo               = unknown
 /usr/bin/oslevel       = unknown
 /bin/universe          = unknown
 
+PATH: /usr/local/texlive/2017/bin/x86_64-linux/
+PATH: /home1/dilawars/Scripts
+PATH: /home1/dilawars/.mutt
+PATH: /home1/dilawars/.linuxbrew/bin
 PATH: /home1/dilawars/perl5/bin
 PATH: /usr/local/texlive/2017/bin/x86_64-linux/
 PATH: /home1/dilawars/Scripts
@@ -34,6 +38,14 @@ PATH: /home1/dilawars/.mutt
 PATH: /usr/local/bin
 PATH: /usr/local/sbin
 PATH: /usr/bin
+PATH: /usr/lib/jvm/default/bin
+PATH: /usr/bin/site_perl
+PATH: /usr/bin/vendor_perl
+PATH: /usr/bin/core_perl
+PATH: /home1/dilawars/.local/bin
+PATH: /home1/dilawars/.cabal/bin
+PATH: /opt/android-sdk/tools
+PATH: /opt/android-sdk/tools/bin
 PATH: /usr/lib/jvm/default/bin
 PATH: /usr/bin/site_perl
 PATH: /usr/bin/vendor_perl
@@ -81,7 +93,7 @@ ac_cv_env_target_alias_value=
 ## Output variables. ##
 ## ----------------- ##
 
-$1_OPT='107551_OPT'
+$1_OPT='51201_OPT'
 BUILD_DIR='/home1/dilawars/Work/GITHUB/DILAWAR/sesc'
 CONDOR_LINK_OPT='#CONDOR_LINK=1'
 DEBUG_OPT='#DEBUG=1'
