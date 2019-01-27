@@ -64,7 +64,9 @@ COPTS	+= -march=$(MINT_TARGET)
 LOPTS	+= -march=$(MINT_TARGET)
 else
 # Default architecture is i686
-OptArch := -march=i686
+# See  https://stackoverflow.com/q/27679693/1805129 for adding `-m32`.
+OptArch := -march=i686 -m32
+
 # But now try to detect the real architecture
 VendorId:=$(shell cat /proc/cpuinfo | grep vendor_id | head -1)
 VendorId:=$(word $(words $(VendorId)),$(VendorId))

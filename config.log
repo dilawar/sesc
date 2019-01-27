@@ -93,7 +93,7 @@ ac_cv_env_target_alias_value=
 ## Output variables. ##
 ## ----------------- ##
 
-$1_OPT='51201_OPT'
+$1_OPT='73531_OPT'
 BUILD_DIR='/home1/dilawars/Work/GITHUB/DILAWAR/sesc'
 CONDOR_LINK_OPT='#CONDOR_LINK=1'
 DEBUG_OPT='#DEBUG=1'
