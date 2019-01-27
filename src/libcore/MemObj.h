@@ -92,7 +92,7 @@ public:
   const LevelType *getLowerLevel() const { return &lowerLevel; }
   const LevelType *getUpperLevel() const { return &upperLevel; }
 
-  const uint32_t getUpperLevelSize() const { return upperLevel.size(); }
+  uint32_t getUpperLevelSize() const { return upperLevel.size(); }
 
   virtual const bool isCache() const { return false; }
 

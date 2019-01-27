@@ -115,7 +115,7 @@ texp:  CFSTRNAMEREF            { $$ = strdup(configptr->getCharPtr("",$1)); conf
 ;
 
 lexp:     CFLONG               { $$ = $1; }
-        | CFNAMEREF            { $$ = configptr->getInt("",$1); configptr->isInt("",$1); free($1) }
+        | CFNAMEREF            { $$ = configptr->getInt("",$1); configptr->isInt("",$1); free($1); }
         | lexp CFPLUS  lexp    { $$ = $1 + $3;    }
         | lexp CFMINUS lexp    { $$ = $1 - $3;    }
         | lexp CFMULT  lexp    { $$ = $1 * $3;    }

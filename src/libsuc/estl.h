@@ -46,16 +46,19 @@ Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #define HASH           std::hash
 #define SLIST          std::slist
 #else
+
 /* GNU C Compiler */
-#include <ext/hash_map>
-#include <ext/hash_set>
-#include <ext/slist>
-#include <ext/algorithm>
-#define HASH_MAP       __gnu_cxx::hash_map
-#define HASH_SET       __gnu_cxx::hash_set
-#define HASH_MULTIMAP  __gnu_cxx::hash_multimap
-#define HASH           __gnu_cxx::hash
-#define SLIST          __gnu_cxx::slist
+// DEPRECATIOn: hash_map has been replaced by unordered_map
+// #include <ext/hash_map>
+#include <unordered_map>
+#include <unordered_set>
+#include <forward_list>
+#include <algorithm>
+#define HASH_MAP       std::unordered_map
+#define HASH_SET       std::unordered_set
+#define HASH_MULTIMAP  std::unordered_multimap
+#define HASH           std::hash
+#define SLIST          std::forward_list
 #endif
 
 #endif // ESTL_H

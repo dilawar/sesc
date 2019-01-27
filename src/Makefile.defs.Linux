@@ -33,7 +33,7 @@ else
 ##############
 # gcc Compiler
 PDEFS	:=-W -Wall -Wno-unused
-CXX	=g++
+CXX	=g++ -std=c++11
 CC	=gcc
 
 ifdef PERFORMANCE
@@ -64,7 +64,8 @@ COPTS	+= -march=$(MINT_TARGET)
 LOPTS	+= -march=$(MINT_TARGET)
 else
 # Default architecture is i686
-OptArch := -march=i686
+OptArch := -m32 -march=i686
+
 # But now try to detect the real architecture
 VendorId:=$(shell cat /proc/cpuinfo | grep vendor_id | head -1)
 VendorId:=$(word $(words $(VendorId)),$(VendorId))
