@@ -33,7 +33,7 @@ else
 ##############
 # gcc Compiler
 PDEFS	:=-W -Wall -Wno-unused
-CXX	=g++
+CXX	=g++ -std=c++11
 CC	=gcc
 
 ifdef PERFORMANCE
