@@ -3,5 +3,8 @@ compiler:
 - clang
 - gcc
 
+install:
+  - flex bison g++
+
 script:
     - ./configure && make && make testsim
