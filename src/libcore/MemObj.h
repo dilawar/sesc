@@ -94,7 +94,7 @@ public:
 
   uint32_t getUpperLevelSize() const { return upperLevel.size(); }
 
-  virtual bool isCache() const { return false; }
+  virtual const bool isCache() const { return false; }
 
   const uint32_t getNumCachesInUpperLevels() const {
     return nUpperCaches;
