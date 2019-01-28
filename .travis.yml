@@ -12,3 +12,5 @@ install:
 
 script:
     - ./configure && make  && make testsim
+    - make testsim-tls
+    - make testsim-mcf
