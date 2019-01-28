@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/dilawar/sesc.svg?branch=master)](https://travis-ci.org/dilawar/sesc)
+
 sesc
 ====
 

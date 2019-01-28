@@ -1,0 +1,14 @@
+sudo : true
+group: edge
+dist : xenial
+language: cpp
+
+compiler:
+- clang
+- gcc
+
+install:
+  - sudo apt install flex bison g++
+
+script:
+    - ./configure && make  && make testsim
