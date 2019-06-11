@@ -1,9 +1,24 @@
 cmake_minimum_required(VERSION 2.8)
 
+include( ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Toolchain-cross-m32.cmake)
+
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libsuc)
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libmint)
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libcore)
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libapp)
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libll)
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libmem)
+include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/libnet)
+
 add_definitions(-DSIMICS)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+# Other flags
+option(ATOMIC "Atomic" TRUE)
+
 add_subdirectory(libapp)
-#add_subdirectory(libcore)
+add_subdirectory(libcore)
 #add_subdirectory(libemul)
 #add_subdirectory(libll)
 #add_subdirectory(libmem)
