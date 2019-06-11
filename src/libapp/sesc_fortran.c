@@ -9,7 +9,7 @@ void sesc_f77_simulation_mark__() {
 // Do nothing
 #else
 
-#include <g2c.h>
+#include "g2c.h"
 
 integer sesc_f77_vfork(void)
 { 
