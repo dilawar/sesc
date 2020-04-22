@@ -15,5 +15,5 @@ This repo was set-up to answer this question on our tech-group.
 
    https://groups.google.com/forum/#!topic/wncc_iitb/C2YgZrky7w8
 
-See the file [README](./README) file for more details.
+See  [README](./README) file for more details.
 
